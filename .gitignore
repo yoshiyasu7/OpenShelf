@@ -1,0 +1,85 @@
+# === Системные файлы ОС (macOS / Windows / Linux) ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
+
+
+# === Виртуальные окружения Python ===
+.venv/
+venv/
+env/
+.envrc
+.python-version
+
+
+# === Python артефакты ===
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# === Пакеты и сборки ===
+build/
+dist/
+*.egg-info/
+*.egg
+
+
+# === Тесты и покрытие ===
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
+
+# === Кэш и временные файлы инструментов ===
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+.pytest_cache/
+.cache/
+
+
+# === Конфиденциальные файлы и переменные окружения ===
+.env
+.env.*
+*.env.local
+*.secret
+*.secrets
+secrets.json
+
+
+# === Логи приложения ===
+logs/
+*.log
+
+
+# === Конфигурация IDE/редакторов ===
+.idea/
+.vscode/
+.cursor/
+*.code-workspace
+
+
+# === Docker ===
+docker-data/
+docker-volume-*/
+*.pid
+
+
+# === Alembic / миграции БД (артефакты) ===
+alembic.ini.bak
+versions/__pycache__/
+
+
+# === Poetry build-system ===
+.venv-poetry/
