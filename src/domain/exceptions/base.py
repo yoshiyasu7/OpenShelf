@@ -1,4 +1,4 @@
-"""Domain-specific exceptions."""
+"""Base Domain-specific exception."""
 
 import typing as t
 
@@ -12,6 +12,5 @@ class DomainException(Exception):
         self.error_code = error_code
 
 
-class AuthorizationException(DomainException):
-    """Exception raised when authorization fails."""
+class ValidationError(DomainException):
     pass
