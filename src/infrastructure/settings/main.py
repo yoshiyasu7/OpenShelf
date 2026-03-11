@@ -17,6 +17,12 @@ def _get_required_env(name: str) -> str:
 class APISettings:
     """API server settings."""
 
+    title: str = field(
+        default_factory=lambda: os.getenv("API_TITLE", "OpenShelf API")
+    )
+    version: str = field(
+        default_factory=lambda: os.getenv("API_VERSION", "1.0.0")
+    )
     debug: bool = field(
         default_factory=lambda: os.getenv("API_DEBUG", "False").lower() == "true"
     )

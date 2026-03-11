@@ -50,8 +50,8 @@ def create_api_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="OpenShelf API",
-        version="1.0.0",
+        title=settings.api.title,
+        version=settings.api.version,
         debug=settings.api.debug,
         lifespan=lifespan,
     )
