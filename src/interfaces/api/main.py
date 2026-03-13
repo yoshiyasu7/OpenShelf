@@ -3,9 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.infrastructure.logging.middleware import RequestContextMiddleware
+from src.infrastructure.logging.config import configure_logging
 from src.infrastructure.settings.main import get_settings
 from src.infrastructure.database.database_manager import DatabaseManager
-from src.interfaces.api import dependencies
 
 
 @asynccontextmanager
@@ -29,14 +30,14 @@ async def lifespan(app: FastAPI):
     await db_manager.initialize()
 
     # Expose the manager to dependency functions.
-    dependencies._db_manager = db_manager
+    app.state.db_manager = db_manager
 
     try:
         yield
     finally:
         # Gracefully shut down infrastructure.
         await db_manager.shutdown()
-        dependencies._db_manager = None
+        app.state.db_manager = None
 
 
 def create_api_app() -> FastAPI:
@@ -47,6 +48,8 @@ def create_api_app() -> FastAPI:
     - easier testing (create independent app instances),
     - different configuration per environment (dev/stage/prod).
     """
+    configure_logging()
+
     settings = get_settings()
 
     app = FastAPI(
@@ -55,6 +58,9 @@ def create_api_app() -> FastAPI:
         debug=settings.api.debug,
         lifespan=lifespan,
     )
+
+    # Logging / request context middleware (request_id, user_id, etc.)
+    app.add_middleware(RequestContextMiddleware)
 
     # Global middleware (CORS, logging, etc.).
     app.add_middleware(
@@ -65,7 +71,6 @@ def create_api_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register routers here, e.g.:
     # app.include_router(api_router, prefix="/api")
 
     return app

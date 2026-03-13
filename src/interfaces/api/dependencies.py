@@ -2,28 +2,21 @@
 
 from typing import AsyncGenerator
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.interfaces.database import DatabaseInterface
 from src.infrastructure.database.database_manager import DatabaseManager  # or an abstract getter
 
 
-# In a simple setup, we keep a single global DatabaseManager instance.
-_db_manager: DatabaseManager | None = None
-
-
-async def get_database_manager() -> DatabaseInterface:
+async def get_database_manager(request: Request) -> DatabaseInterface:
     """
     Return the initialized database manager.
-
-    This function expects the manager to be created and initialized
-    during application startup (lifespan). If it is missing, it means
-    the app was not configured correctly.
     """
-    if _db_manager is None:
+    db_manager: DatabaseManager | None = getattr(request.app.state, "db_manager", None)
+    if db_manager is None:
         raise RuntimeError("Database manager is not initialized.")
-    return _db_manager
+    return db_manager
 
 
 async def get_db_session(
