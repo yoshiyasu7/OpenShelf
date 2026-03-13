@@ -6,7 +6,9 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.interfaces.database import DatabaseInterface
-from src.infrastructure.database.database_manager import DatabaseManager  # or an abstract getter
+from src.infrastructure.database.database_manager import DatabaseManager
+from src.infrastructure.services.jwt import JWTService
+from src.infrastructure.settings.main import Settings, get_settings
 
 
 async def get_database_manager(request: Request) -> DatabaseInterface:
@@ -24,7 +26,7 @@ async def get_db_session(
 ) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide a database session for a single request.
-
+    
     Usage in route handlers:
         async def handler(session: AsyncSession = Depends(get_db_session)):
             ...
@@ -50,3 +52,12 @@ async def get_transactional_session(
         except:
             await session.rollback()
             raise
+
+
+def get_jwt_service(
+    settings: Settings = Depends(get_settings),
+) -> JWTService:
+    """
+    Provide configured JWT service instance.
+    """
+    return JWTService(settings=settings.jwt)

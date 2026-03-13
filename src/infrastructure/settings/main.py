@@ -35,6 +35,24 @@ class APISettings:
 
 
 @dataclass
+class JWTSettings:
+    """JWT authentication settings."""
+
+    secret_key: str = field(
+        default_factory=lambda: _get_required_env("JWT_SECRET_KEY")
+    )
+    algorithm: str = field(
+        default_factory=lambda: _get_required_env("JWT_ALGORITHM")
+    )
+    access_token_expire_minutes: int = field(
+        default_factory=lambda: int(_get_required_env("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"))
+    )
+    refresh_token_expire_days: int = field(
+        default_factory=lambda: int(_get_required_env("JWT_REFRESH_TOKEN_EXPIRE_DAYS"))
+    )
+
+
+@dataclass
 class DatabaseSettings:
     """Database connection settings."""
 
@@ -63,6 +81,7 @@ class Settings:
     """All application settings."""
     
     api: APISettings = field(default_factory=APISettings)
+    jwt: JWTSettings = field(default_factory=JWTSettings)
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
 
 
