@@ -107,7 +107,7 @@ def configure_logging() -> None:
         structlog.contextvars.merge_contextvars,
         structlog.processors.TimeStamper(fmt="iso", key="timestamp"),
         structlog.processors.add_log_level,
-        structlog.processors.add_logger_name,
+        structlog.stdlib.add_logger_name,
         structlog.processors.CallsiteParameterAdder(
             parameters=(
                 structlog.processors.CallsiteParameter.FILENAME,
@@ -178,11 +178,6 @@ def configure_logging() -> None:
 
     # --- third-party loggers & warnings ---
     logging.captureWarnings(True)
-
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):
-        third_party_logger = logging.getLogger(name)
-        third_party_logger.setLevel(level)
-        third_party_logger.propagate = True
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:

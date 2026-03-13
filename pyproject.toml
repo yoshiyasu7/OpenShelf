@@ -1,6 +1,6 @@
 [project]
 name = "openshelf"
-version = "0.6.0"
+version = "0.6.2"
 description = "RESTful API for managing a library catalog. The system allows you to manage information about books, authors, readers, and book loans."
 authors = [
     {name = "maxim.w",email = "max.wojw@gmail.com"}
