@@ -7,6 +7,7 @@ from src.infrastructure.logging.middleware import RequestContextMiddleware
 from src.infrastructure.logging.config import configure_logging
 from src.infrastructure.settings.main import get_settings
 from src.infrastructure.database.database_manager import DatabaseManager
+from src.interfaces.api.v1.main import api_v1_router
 
 
 @asynccontextmanager
@@ -71,6 +72,6 @@ def create_api_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # app.include_router(api_router, prefix="/api")
+    app.include_router(api_v1_router, prefix="/api")
 
     return app
