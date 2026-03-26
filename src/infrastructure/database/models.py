@@ -47,6 +47,33 @@ class UserModel(Base):
     )
 
 
+class RefreshSessionModel(Base):
+    """
+    Refresh token session store.
+
+    Stores a one-way hash of refresh token strings to support:
+    - logout (server-side revocation),
+    - refresh token rotation,
+    - multi-device sessions (optional; one row per refresh token).
+    """
+
+    __tablename__ = "refresh_sessions"
+
+    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+    user: Mapped["UserModel"] = relationship(lazy="selectin")
+
+    __table_args__ = (
+        CheckConstraint("expires_at > created_at", name="check_refresh_expires_after_created"),
+        Index("idx_refresh_sessions_user_active", "user_id", postgresql_where=(Column("revoked_at") == None)),
+    )
+
+
 class AuthorModel(Base):
     """SQLAlchemy model for Author entity."""
 
