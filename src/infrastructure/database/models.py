@@ -8,7 +8,9 @@ from sqlalchemy import (
     String, Integer, Table, Text, Column, ForeignKey
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, UUID as PostgreUUID
+
+PUUID = PostgreUUID(as_uuid=True)
 
 
 class Base(DeclarativeBase):
@@ -18,8 +20,8 @@ class Base(DeclarativeBase):
 authors_books = Table(
     "authors_books",
     Base.metadata,
-    Column("book_id", UUID, ForeignKey("books.id", ondelete='CASCADE'), primary_key=True, index=True),
-    Column("author_id", UUID, ForeignKey("authors.id"), primary_key=True, index=True),
+    Column("book_id", PUUID, ForeignKey("books.id", ondelete='CASCADE'), primary_key=True, index=True),
+    Column("author_id", PUUID, ForeignKey("authors.id"), primary_key=True, index=True),
 )
 
 
@@ -28,7 +30,7 @@ class UserModel(Base):
 
     __tablename__ = 'users'
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=True, index=True)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
@@ -59,8 +61,8 @@ class RefreshSessionModel(Base):
 
     __tablename__ = "refresh_sessions"
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(PUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
@@ -79,7 +81,7 @@ class AuthorModel(Base):
 
     __tablename__ = 'authors'
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String)
     biography: Mapped[str] = mapped_column(Text)
     birthday: Mapped[date] = mapped_column(Date, index=True)
@@ -110,7 +112,7 @@ class BookModel(Base):
 
     __tablename__ = 'books'
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     title: Mapped[str] = mapped_column(String, unique=True, index=True)
     description: Mapped[str] = mapped_column(Text)
     publication_date: Mapped[date] = mapped_column(Date, index=True)
@@ -144,15 +146,15 @@ class BookLoanModel(Base):
 
     __tablename__ = "book_loans"
 
-    id: Mapped[UUID] = mapped_column(UUID, primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
-        UUID,
+        PUUID,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     book_id: Mapped[UUID] = mapped_column(
-        UUID,
+        PUUID,
         ForeignKey("books.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
