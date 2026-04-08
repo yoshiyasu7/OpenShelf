@@ -14,6 +14,16 @@ def _get_required_env(name: str) -> str:
 
 
 @dataclass
+class APPSettings:
+    app_env: str = field(
+        default_factory=lambda: os.getenv("APP_ENV", "dev").lower()
+    )
+    log_level: str = field(
+        default_factory=lambda: os.getenv("LOG_LEVEL", "DEBUG").upper()
+    )
+
+
+@dataclass
 class APISettings:
     """API server settings."""
 
@@ -80,6 +90,7 @@ class DatabaseSettings:
 class Settings:
     """All application settings."""
     
+    app: APPSettings = field(default_factory=APPSettings)
     api: APISettings = field(default_factory=APISettings)
     jwt: JWTSettings = field(default_factory=JWTSettings)
     db: DatabaseSettings = field(default_factory=DatabaseSettings)

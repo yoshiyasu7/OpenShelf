@@ -5,6 +5,10 @@ from typing import Literal
 
 import structlog
 
+from src.infrastructure.settings.main import Settings, get_settings
+
+settings: Settings = get_settings()
+
 # --- public types & logger name prefixes ---
 
 EnvType = Literal["dev", "prod", "test"]
@@ -21,7 +25,7 @@ def get_env() -> EnvType:
     Supported values: dev | prod | test.
     Any unknown value falls back to "dev".
     """
-    env = os.getenv("APP_ENV", "dev").lower()
+    env = settings.app.app_env
     if env not in {"dev", "prod", "test"}:
         return "dev"
     return env  # type: ignore[return-value]
@@ -38,9 +42,9 @@ def _get_log_level() -> int:
        - test: WARNING
        - prod: INFO
     """
-    level_name = os.getenv("LOG_LEVEL")
+    level_name = settings.app.log_level
     if level_name:
-        return getattr(logging, level_name.upper(), logging.INFO)
+        return getattr(logging, level_name, logging.INFO)
 
     env = get_env()
     if env == "dev":
@@ -116,7 +120,6 @@ def configure_logging() -> None:
             )
         ),
         structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
     ]
 
     if env == "dev":
@@ -154,6 +157,7 @@ def configure_logging() -> None:
     api_logger = logging.getLogger(API_LOGGER_NAME)
     api_logger.setLevel(level)
     api_logger.propagate = False
+    api_logger.handlers.clear()
     for handler_name in ("console", "api_file"):
         handler = handlers[handler_name]
         handler.setFormatter(formatter)
@@ -163,6 +167,7 @@ def configure_logging() -> None:
     worker_logger = logging.getLogger(WORKER_LOGGER_NAME)
     worker_logger.setLevel(level)
     worker_logger.propagate = False
+    worker_logger.handlers.clear()
     for handler_name in ("console", "worker_file"):
         handler = handlers[handler_name]
         handler.setFormatter(formatter)
@@ -170,14 +175,25 @@ def configure_logging() -> None:
 
     # --- SQL logger: sql.log only ---
     sql_logger = logging.getLogger(SQL_LOGGER_NAME)
-    sql_logger.setLevel(logging.INFO)
+    sql_logger.setLevel(logging.INFO if env == "dev" else logging.WARNING)
     sql_logger.propagate = False
+    sql_logger.handlers.clear()
     sql_handler = handlers["sql_file"]
     sql_handler.setFormatter(formatter)
     sql_logger.addHandler(sql_handler)
 
     # --- third-party loggers & warnings ---
     logging.captureWarnings(True)
+    logging.getLogger("py.warnings").setLevel(logging.ERROR)
+    logging.getLogger("passlib").setLevel(logging.ERROR)
+    logging.getLogger("bcrypt").setLevel(logging.ERROR)
+
+    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.INFO if env == "dev" else logging.WARNING)
+
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO if env == "dev" else logging.WARNING)
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+    logging.getLogger("asyncpg").setLevel(logging.WARNING)
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
