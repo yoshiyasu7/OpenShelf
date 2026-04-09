@@ -1,16 +1,16 @@
 """User Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainException
+from src.domain.exceptions.base import DomainError
 
 
-class UserNotFound(DomainException):
+class UserNotFoundError(DomainError):
     """Exception raised when user not found."""
     pass
 
-class UserAlreadyExists(DomainException):
+class UserAlreadyExistsError(DomainError):
     """Exception raised when user already exists with username/email."""
     pass
 
-class InvalidCredentials(DomainException):
+class InvalidCredentialsError(DomainError):
     """Exception raised when user's credentials invalid."""
     pass

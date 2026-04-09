@@ -1,12 +1,14 @@
-from __future__ import annotations
-
-from datetime import datetime
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.database.models import RefreshSessionModel
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from uuid import UUID
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SQLAlchemySessionRepository:
@@ -62,4 +64,4 @@ class SQLAlchemySessionRepository:
             .values(revoked_at=now)
         )
         result = await self._session.execute(stmt)
-        return result.rowcount > 0
+        return result.scalar_one_or_none is not None

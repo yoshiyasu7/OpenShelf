@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from argon2 import PasswordHasher as Argon2PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 
@@ -32,4 +30,3 @@ class PasswordHasher:
 
     def needs_rehash(self, password_hash: str) -> bool:
         return self._hasher.check_needs_rehash(password_hash)
-

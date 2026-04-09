@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
+
 from src.application.dtos.user.main import UserPublic
 
 

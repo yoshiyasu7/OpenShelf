@@ -1,10 +1,11 @@
-from __future__ import annotations
-
 import hashlib
-from datetime import datetime
-from uuid import UUID
+from typing import TYPE_CHECKING
 
-from src.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
+if TYPE_CHECKING:
+    from datetime import datetime
+    from uuid import UUID
+
+    from src.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
 
 
 class RefreshSessionStore:
@@ -27,8 +28,8 @@ class RefreshSessionStore:
         user_id: UUID,
         refresh_token: str,
         expires_at: datetime,
-    ):
-        return await self._repository.create(
+    ) -> None:
+        await self._repository.create(
             user_id=user_id,
             token_hash=self.hash_token(refresh_token),
             expires_at=expires_at,

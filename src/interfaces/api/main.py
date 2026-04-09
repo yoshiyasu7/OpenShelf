@@ -1,17 +1,21 @@
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.infrastructure.logging.middleware import RequestContextMiddleware
+from src.infrastructure.database.provider import init_db_manager
 from src.infrastructure.logging.config import configure_logging
+from src.infrastructure.logging.middleware import RequestContextMiddleware
 from src.infrastructure.settings.main import get_settings
-from src.infrastructure.database.database_manager import DatabaseManager
 from src.interfaces.api.v1.main import api_v1_router
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """
     Application lifespan handler.
 
@@ -20,25 +24,12 @@ async def lifespan(app: FastAPI):
     """
     settings = get_settings()
 
-    # Initialize database manager once for the whole application lifetime.
-    db_manager = DatabaseManager(
-        database_url=settings.db.url,
-        debug=settings.db.debug,
-        pool_size=settings.db.pool_size,
-        max_overflow=settings.db.max_overflow,
-        pool_recycle=settings.db.pool_recycle,
-    )
+    db_manager = init_db_manager(settings)
     await db_manager.initialize()
 
-    # Expose the manager to dependency functions.
-    app.state.db_manager = db_manager
+    yield
 
-    try:
-        yield
-    finally:
-        # Gracefully shut down infrastructure.
-        await db_manager.shutdown()
-        app.state.db_manager = None
+    await db_manager.shutdown()
 
 
 def create_api_app() -> FastAPI:

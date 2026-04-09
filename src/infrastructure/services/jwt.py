@@ -1,19 +1,18 @@
 """JWT token service for authentication."""
 
-from __future__ import annotations
-
-from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Any, Dict
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from jose import JWTError, jwt
 from pydantic import BaseModel, ValidationError
 
-from src.infrastructure.settings.main import JWTSettings
+if TYPE_CHECKING:
+    from src.infrastructure.settings.main import JWTSettings
 
 
-class TokenType(str, Enum):
+class TokenType(StrEnum):
     ACCESS = "access"
     REFRESH = "refresh"
 
@@ -78,10 +77,10 @@ class JWTService:
         token_type: TokenType,
         expires_delta: timedelta,
     ) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expire = now + expires_delta
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "sub": str(subject),
             "type": token_type.value,
             "iat": int(now.timestamp()),
@@ -95,7 +94,7 @@ class JWTService:
         )
         return token
 
-    def _decode_raw(self, token: str) -> Dict[str, Any]:
+    def _decode_raw(self, token: str) -> dict[str, Any]:
         """Decode JWT without business-level validation."""
         try:
             decoded = jwt.decode(

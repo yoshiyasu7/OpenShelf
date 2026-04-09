@@ -1,6 +1,6 @@
 [project]
 name = "openshelf"
-version = "0.9.3"
+version = "0.10.0"
 description = "RESTful API for managing a library catalog. The system allows you to manage information about books, authors, readers, and book loans."
 authors = [
     {name = "maxim.w",email = "max.wojw@gmail.com"}
@@ -28,3 +28,73 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.15.9,<0.16.0)",
+    "basedpyright (>=1.39.0,<2.0.0)",
+    "pytest (>=9.0.3,<10.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "recommended"
+
+include = ["src"]
+
+reportExplicitAny = false
+reportAny = false
+reportMissingTypeStubs = false
+reportUnusedCallResult = false
+reportUnusedImport = false
+reportUnusedVariable = false
+reportUnannotatedClassAttribute = false
+
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "F",      # Errors
+    "E", "W", # Style
+    "I",      # Isort
+    "UP",     # Pyupgrade (3.14+)
+    "ANN",    # Annotations
+    "PYI",    # Stub files
+    "B",      # Bugbear
+    "DTZ",    # Datetime
+    "TCH",    # Type-checking imports
+    "N",      # Naming
+    "RUF",    # Ruff-specific rules
+    "ASYNC",  # Asyncio best practices
+]
+ignore = [
+    "ANN101", # Self
+    "ANN102", # Cls
+]
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = ["id", "obj", "db"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
+[tool.ruff.lint.flake8-type-checking]
+quote-annotations = true 
+
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "sqlalchemy.orm.DeclarativeBase"]
+runtime-evaluated-decorators = ["fastapi.Depends", "pydantic.validate_call"]
+
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

@@ -1,13 +1,16 @@
 import json
-import typing as t
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, override
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.infrastructure.interfaces.database import DatabaseInterface
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
-def _json_serializer(obj: t.Any) -> str:
+
+def _json_serializer(obj: object) -> str:
     """Custom JSON serializer that preserves Unicode characteres."""
     return json.dumps(obj, ensure_ascii=False)
 
@@ -22,7 +25,7 @@ class DatabaseManager(DatabaseInterface):
         pool_size: int = 5,
         max_overflow: int = 10,
         pool_recycle: int = 3600,
-    ):
+    ) -> None:
         """Initialize database manager.
 
         Args:
@@ -37,17 +40,16 @@ class DatabaseManager(DatabaseInterface):
         self.pool_size = pool_size
         self.max_overflow = max_overflow
         self.pool_recycle = pool_recycle
+        self._engine = None
+        self._session_factory = None
 
-        self._engine: t.Optional[AsyncEngine] = None
-        self._session_factory: t.Optional[async_sessionmaker[AsyncSession]] = None
-
-
+    @override
     async def initialize(self) -> None:
         """Initialize the database connection and session factory."""
         if self._engine is not None:
             return
-        
-        engine_kwargs: t.Dict[str, t.Any] = {
+
+        engine_kwargs: dict[str, object] = {
             "echo": self.debug,
             "json_serializer": _json_serializer,
             "pool_size": self.pool_size,
@@ -65,7 +67,7 @@ class DatabaseManager(DatabaseInterface):
             expire_on_commit=False,
         )
 
-
+    @override
     async def shutdown(self) -> None:
         """Shutdown the database connection."""
         if self._engine is None:
@@ -75,9 +77,9 @@ class DatabaseManager(DatabaseInterface):
         self._engine = None
         self._session_factory = None
 
-    
+    @override
     @asynccontextmanager
-    async def get_session(self) -> t.AsyncGenerator[AsyncSession, None]:
+    async def get_session(self) -> AsyncGenerator[AsyncSession]:
         """Get a database session context manager."""
         if self._session_factory is None:
             raise RuntimeError("Database not initialized. Call initialize() first.")
@@ -85,21 +87,21 @@ class DatabaseManager(DatabaseInterface):
         async with self._session_factory() as session:
             yield session
 
-
-    async def health_check(self) -> t.Dict[str, t.Any]:
+    @override
+    async def health_check(self) -> dict[str, object]:
         """Check if the database is healthy and accessible."""
         if self._engine is None:
             return {}
 
         pool = self._engine.pool
         return {
-            "pool_size": pool.size(),
-            "checked_in": pool.checkedin(),
-            "checked_out": pool.checkedout(),
-            "overflow": pool.overflow(),
-            "invalid": pool.invalid(),
+            "pool_size": pool.size(),  # pyright: ignore[reportAttributeAccessIssue]
+            "checked_in": pool.checkedin(),  # pyright: ignore[reportAttributeAccessIssue]
+            "checked_out": pool.checkedout(),  # pyright: ignore[reportAttributeAccessIssue]
+            "overflow": pool.overflow(),  # pyright: ignore[reportAttributeAccessIssue]
+            "invalid": pool.invalid(),  # pyright: ignore[reportAttributeAccessIssue]
         }
 
-    
+    @override
     def __repr__(self) -> str:
         return f"DatabaseManager(PostgreSQL, url={self.database_url})"

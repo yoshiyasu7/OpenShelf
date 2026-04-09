@@ -1,3 +1,3 @@
-from src.infrastructure.settings.main import get_settings, Settings
+from src.infrastructure.settings.main import Settings, get_settings
 
-__all__ = ["get_settings", "Settings"]
+__all__ = ["Settings", "get_settings"]

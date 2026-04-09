@@ -1,28 +1,28 @@
 """BookLoan Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainException
+from src.domain.exceptions.base import DomainError
 
 
-class LoanNotFound(DomainException):
+class LoanNotFoundError(DomainError):
     """Exception raised when book loan not found."""
     pass
 
-class LoanLimitExceeded(DomainException):
+class LoanLimitExceededError(DomainError):
     """Exception raised when book loan out of limit for user."""
     pass
 
-class NoAvailableInstances(DomainException):
+class NoAvailableInstancesError(DomainError):
     """Exception raised when book has no available instances."""
     pass
 
-class AlreadyReturned(DomainException):
+class AlreadyReturnedError(DomainError):
     """Exception raised when instance of book already returned."""
     pass
 
-class LoanOverdue(DomainException):
+class LoanOverdueError(DomainError):
     """Exception raised when loan is overdue for user."""
     pass
 
-class ConcurrencyConflict(DomainException):
+class ConcurrencyConflictError(DomainError):
     """Exception raised when the copies of the book have run outid."""
     pass

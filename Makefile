@@ -7,12 +7,19 @@ run-dev:
 
 
 # Check formatting
-black:
-	isort --profile black .
-	black -l75 .
+.DEFAULT_GOAL := check
 
-check: black
-	poetry run flake8 .
+format:
+	poetry run ruff format .
+	poetry run ruff check --fix .
+
+check:
+	@echo "1/2 Running Ruff (Linting & Formatting check)..."
 	poetry run ruff check .
-	poetry run mypy .
-	poetry run pylint .
+	poetry run ruff format --check .
+	@echo "2/2 Running Basedpyright (Type checking)..."
+	poetry run basedpyright
+
+clean:
+	rm -rf .ruff_cache .basedpyright_cache .pytest_cache
+	find . -type d -name "__pycache__" -exec rm -rf {} +

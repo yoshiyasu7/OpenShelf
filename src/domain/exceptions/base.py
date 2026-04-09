@@ -1,16 +1,14 @@
-"""Base Domain-specific exception."""
-
-import typing as t
+"""Domain-specific exceptions."""
 
 
-class DomainException(Exception):
+class DomainError(Exception):
     """Base exception for domain-related errors."""
 
-    def __init__(self, message: str, error_code: t.Optional[str] = None):
+    def __init__(self, message: str, error_code: str | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.error_code = error_code
 
 
-class ValidationError(DomainException):
+class ValidationError(DomainError):
     pass

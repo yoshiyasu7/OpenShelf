@@ -1,48 +1,58 @@
 import uuid
-from typing import Callable
-
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from .config import get_logger
 
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
 log = get_logger(__name__)
 
-# HTTP header name used to propagate request ID between services.
-REQUEST_ID_HEADER = "X-Request-ID"
+REQUEST_ID_HEADER = b"x-request-id"
 
 
-class RequestContextMiddleware(BaseHTTPMiddleware):
+class RequestContextMiddleware:
     """
-    Bind per-request context (request_id, user_id, path, method) into structlog.contextvars.
+    Pure ASGI Middleware for managing request context and logging.
     """
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Response],
-    ) -> Response:
-        request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
 
-        raw_user = getattr(request.state, "user", None)
-        user_id = None
-        if raw_user is not None:
-            user_id = getattr(raw_user, "id", None)
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        request_id_bytes = headers.get(REQUEST_ID_HEADER, str(uuid.uuid4()).encode())
+        request_id = request_id_bytes.decode("utf-8")
+
+        path = scope.get("path", "")
+        method = scope.get("method", "")
+
+        state: dict[str, Any] = scope.get("state", {})
+        user = state.get("user")
+        user_id = getattr(user, "id", None) if user else None
 
         structlog.contextvars.bind_contextvars(
             request_id=request_id,
             user_id=user_id,
-            path=request.url.path,
-            method=request.method,
+            path=path,
+            method=method,
         )
 
-        try:
-            response = await call_next(request)
+        async def send_wrapper(message: Message) -> None:
+            """Intercept the response start to add the X-Request-ID header."""
+            if message["type"] == "http.response.start":
+                response_headers = list(message.get("headers", []))
+                response_headers.append((REQUEST_ID_HEADER, request_id.encode("utf-8")))
+                message["headers"] = response_headers
+            await send(message)
 
-            # Ensure the request ID is visible to the caller.
-            response.headers[REQUEST_ID_HEADER] = request_id
-            return response
+        try:
+            await self.app(scope, receive, send_wrapper)
         finally:
             structlog.contextvars.clear_contextvars()
-

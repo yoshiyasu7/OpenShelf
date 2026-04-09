@@ -1,12 +1,14 @@
-from __future__ import annotations
-
-from uuid import UUID
+from typing import TYPE_CHECKING, override
 
 from sqlalchemy import or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.user.main import UserRepository
 from src.infrastructure.database.models import UserModel
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SQLAlchemyUserRepository(UserRepository):
@@ -15,16 +17,19 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @override
     async def get_by_id(self, *, user_id: UUID) -> UserModel | None:
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    @override
     async def get_by_identifier(self, *, identifier: str) -> UserModel | None:
         stmt = select(UserModel).where(or_(UserModel.username == identifier, UserModel.email == identifier))
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    @override
     async def exists_by_username_or_email(self, *, username: str, email: str | None) -> bool:
         conditions = [UserModel.username == username]
         if email is not None:
@@ -34,6 +39,7 @@ class SQLAlchemyUserRepository(UserRepository):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
+    @override
     async def create(
         self,
         *,

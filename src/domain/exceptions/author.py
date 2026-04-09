@@ -1,12 +1,12 @@
 """Author Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainException
+from src.domain.exceptions.base import DomainError
 
 
-class AuthorNotFound(DomainException):
+class AuthorNotFoundError(DomainError):
     """Exception raised when author not found."""
     pass
 
-class AuthorAlreadyExists(DomainException):
+class AuthorAlreadyExistsError(DomainError):
     """Exception raised when author already exists with name."""
     pass

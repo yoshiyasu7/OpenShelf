@@ -1,15 +1,17 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
-from src.domain.exceptions.user import InvalidCredentials, UserAlreadyExists, UserNotFound
-from src.domain.repositories.user.main import UserRepository
+from src.domain.exceptions.user import InvalidCredentialsError, UserAlreadyExistsError, UserNotFoundError
 from src.infrastructure.auth.passwords import PasswordHasher
-from src.infrastructure.auth.refresh_sessions import RefreshSessionStore
-from src.infrastructure.database.models import UserModel
 from src.infrastructure.services.jwt import JWTService, TokenDecodeError, TokenValidationError
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from src.domain.repositories.user.main import UserRepository
+    from src.infrastructure.auth.refresh_sessions import RefreshSessionStore
+    from src.infrastructure.database.models import UserModel
 
 
 @dataclass(frozen=True)
@@ -47,7 +49,7 @@ class AuthUseCases:
 
     async def register(self, *, username: str, email: str | None, password: str) -> UserModel:
         if await self._user_repository.exists_by_username_or_email(username=username, email=email):
-            raise UserAlreadyExists("User already exists.")
+            raise UserAlreadyExistsError("User already exists.")
 
         return await self._user_repository.create(
             username=username,
@@ -59,10 +61,10 @@ class AuthUseCases:
     async def login(self, *, identifier: str, password: str) -> AuthResult:
         user = await self._user_repository.get_by_identifier(identifier=identifier)
         if user is None:
-            raise InvalidCredentials("Invalid credentials.")
+            raise InvalidCredentialsError("Invalid credentials.")
 
         if not self._hasher.verify(password, user.password_hash):
-            raise InvalidCredentials("Invalid credentials.")
+            raise InvalidCredentialsError("Invalid credentials.")
 
         tokens = self._issue_tokens(user_id=user.id)
         await self._refresh_store.create(
@@ -74,7 +76,7 @@ class AuthUseCases:
 
     async def logout(self, *, refresh_token: str) -> None:
         # Idempotent: even if token invalid/unknown -> no error.
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         try:
             self._jwt.verify_refresh_token(refresh_token)
         except (TokenDecodeError, TokenValidationError):
@@ -83,20 +85,20 @@ class AuthUseCases:
         await self._refresh_store.revoke(refresh_token=refresh_token, now=now)
 
     async def refresh(self, *, refresh_token: str) -> AuthResult:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         try:
             payload = self._jwt.verify_refresh_token(refresh_token)
         except (TokenDecodeError, TokenValidationError) as exc:
-            raise InvalidCredentials("Invalid refresh token.") from exc
+            raise InvalidCredentialsError("Invalid refresh token.") from exc
 
         user_id: UUID = payload.sub
         old_hash = self._refresh_store.hash_token(refresh_token)
         if not await self._refresh_store.is_active(token_hash=old_hash, now=now):
-            raise InvalidCredentials("Invalid refresh token.")
+            raise InvalidCredentialsError("Invalid refresh token.")
 
         user = await self._user_repository.get_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFound("User not found.")
+            raise UserNotFoundError("User not found.")
 
         new_tokens = self._issue_tokens(user_id=user_id)
         await self._refresh_store.rotate(
@@ -116,7 +118,7 @@ class AuthUseCases:
 
     def _refresh_expires_at(self) -> datetime:
         days = self._jwt.settings.refresh_token_expire_days
-        return datetime.now(timezone.utc) + timedelta(days=days)
+        return datetime.now(UTC) + timedelta(days=days)
 
 
 class ValidateAccessTokenUseCase:
@@ -130,10 +132,10 @@ class ValidateAccessTokenUseCase:
         try:
             payload = self._jwt.verify_access_token(access_token)
         except (TokenDecodeError, TokenValidationError) as exc:
-            raise InvalidCredentials("Invalid access token.") from exc
+            raise InvalidCredentialsError("Invalid access token.") from exc
 
         user = await self._user_repository.get_by_id(user_id=payload.sub)
         if user is None:
-            raise UserNotFound("User not found.")
+            raise UserNotFoundError("User not found.")
 
         return user

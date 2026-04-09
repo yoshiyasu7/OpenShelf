@@ -1,9 +1,10 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from uuid import UUID
+from typing import TYPE_CHECKING
 
-from src.infrastructure.database.models import UserModel
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from src.infrastructure.database.models import UserModel
 
 
 class UserRepository(ABC):

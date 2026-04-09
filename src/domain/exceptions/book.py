@@ -1,16 +1,16 @@
 """Book Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainException
+from src.domain.exceptions.base import DomainError
 
 
-class BookNotFound(DomainException):
+class BookNotFoundError(DomainError):
     """Exception raised when book is not found."""
     pass
 
-class BookAlreadyExists(DomainException):
+class BookAlreadyExistsError(DomainError):
     """Exception raised when book already exists with title."""
     pass
 
-class InvalidPublicationDate(DomainException):
+class InvalidPublicationDateError(DomainError):
     """Exception raised when book has invalid publication date."""
     pass

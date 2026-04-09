@@ -1,7 +1,9 @@
-from __future__ import annotations
+from typing import TYPE_CHECKING
 
-from src.infrastructure.database.models import UserModel
 from src.application.dtos.user.main import UserPublic
+
+if TYPE_CHECKING:
+    from src.infrastructure.database.models import UserModel
 
 
 def user_to_public_dto(u: UserModel) -> UserPublic:

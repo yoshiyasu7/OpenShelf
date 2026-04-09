@@ -26,9 +26,12 @@ def get_env() -> EnvType:
     Any unknown value falls back to "dev".
     """
     env = settings.app.app_env
-    if env not in {"dev", "prod", "test"}:
-        return "dev"
-    return env  # type: ignore[return-value]
+
+    if env in {"dev", "prod", "test"}:
+        from typing import cast
+        return cast("EnvType", env)
+
+    return "dev"
 
 
 def _get_log_level() -> int:

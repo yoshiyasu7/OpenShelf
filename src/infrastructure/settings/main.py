@@ -1,6 +1,7 @@
-from functools import lru_cache
 import os
 from dataclasses import dataclass, field
+from functools import lru_cache
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -89,7 +90,7 @@ class DatabaseSettings:
 @dataclass
 class Settings:
     """All application settings."""
-    
+
     app: APPSettings = field(default_factory=APPSettings)
     api: APISettings = field(default_factory=APISettings)
     jwt: JWTSettings = field(default_factory=JWTSettings)
