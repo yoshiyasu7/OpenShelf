@@ -11,11 +11,11 @@ from src.application.dtos.user.main import (
 )
 from src.interfaces.api.dependencies import get_auth_use_cases
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(tags=["Authentication"])
 
 
 @router.post(
-    "/users/register",
+    "/auth/register",
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -30,7 +30,7 @@ async def register_user(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
-@router.post("/users/login", response_model=TokenResponse)
+@router.post("/auth/login", response_model=TokenResponse)
 async def login_user(
     payload: LoginRequest,
     uc: AuthUseCases = Depends(get_auth_use_cases),
@@ -46,7 +46,7 @@ async def login_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from exc
 
 
-@router.post("/users/refresh", response_model=TokenResponse)
+@router.post("/auth/refresh", response_model=TokenResponse)
 async def refresh_tokens(
     payload: RefreshRequest,
     uc: AuthUseCases = Depends(get_auth_use_cases),
@@ -62,7 +62,7 @@ async def refresh_tokens(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from exc
 
 
-@router.post("/users/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     payload: RefreshRequest,
     uc: AuthUseCases = Depends(get_auth_use_cases),
