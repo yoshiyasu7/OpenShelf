@@ -3,10 +3,6 @@
 from src.domain.exceptions.base import DomainException
 
 
-class AuthorizationException(DomainException):
-    """Exception raised when authorization fails."""
-    pass
-
 class UserNotFound(DomainException):
     """Exception raised when user not found."""
     pass
