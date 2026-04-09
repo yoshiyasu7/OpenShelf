@@ -3,12 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.application.use_cases.auth_use_cases import AuthUseCases
-from src.domain.exceptions.user import InvalidCredentials, UserAlreadyExists, UserNotFound
-from src.application.mappers.user import user_to_public_dto
-from src.application.dtos.user.main import (
+from src.application.dtos.auth.main import (
     RegisterRequest, LoginRequest,
     RefreshRequest, RegisterResponse, TokenResponse,
 )
+from src.application.mappers.user import user_to_public_dto
+from src.domain.exceptions.user import InvalidCredentials, UserAlreadyExists, UserNotFound
 from src.interfaces.api.dependencies import get_auth_use_cases
 
 router = APIRouter(tags=["Authentication"])
