@@ -5,8 +5,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.application.dtos.user.main import UserPublic  # noqa: TC001
 from src.application.mappers.user import user_to_public_dto
+from src.dependencies import ValidateTokenService  # noqa: TC001
 from src.domain.exceptions.user import InvalidCredentialsError, UserNotFoundError
-from src.interfaces.api.dependencies import ValidateTokenService  # noqa: TC001
 
 TokenAuth = Annotated[HTTPAuthorizationCredentials | None, Depends(HTTPBearer(auto_error=False))]
 

@@ -8,8 +8,8 @@ from src.application.dtos.auth.main import (
     TokenResponse,
 )
 from src.application.mappers.user import user_to_public_dto
+from src.dependencies import AuthService  # noqa: TC001
 from src.domain.exceptions.user import InvalidCredentialsError, UserAlreadyExistsError, UserNotFoundError
-from src.interfaces.api.dependencies import AuthService  # noqa: TC001
 
 router = APIRouter(tags=["Authentication"])
 
