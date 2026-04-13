@@ -6,7 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database.provider import init_db_manager
 from src.infrastructure.logging.config import configure_logging
-from src.infrastructure.logging.middleware import RequestContextMiddleware
+from src.infrastructure.logging.middleware import (
+    RequestContextMiddleware,
+    exception_handler,
+)
 from src.infrastructure.settings.main import get_settings
 from src.interfaces.api.v1.main import api_v1_router
 
@@ -19,7 +22,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """
     Application lifespan handler.
 
-    - On startup: initialize core infrastructure (database, queues, etc.).
+    - On startup: initialize core infrastructure.
     - On shutdown: gracefully release all external resources.
     """
     settings = get_settings()
@@ -53,6 +56,9 @@ def create_api_app() -> FastAPI:
 
     # Logging / request context middleware (request_id, user_id, etc.)
     app.add_middleware(RequestContextMiddleware)
+
+    # Handle unexpected and custom errors
+    app.add_exception_handler(Exception, exception_handler)
 
     # Global middleware (CORS, logging, etc.).
     app.add_middleware(

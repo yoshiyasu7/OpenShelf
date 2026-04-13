@@ -2,6 +2,11 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 import structlog
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from src.domain.exceptions.base import DomainError
 
 from .config import get_logger
 
@@ -56,3 +61,56 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             structlog.contextvars.clear_contextvars()
+
+
+async def exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+    """
+    A single place to handle all application errors.
+    """
+    # Catches all errors inherited from DomainError
+    if isinstance(exc, DomainError):
+        log.warning(
+            "domain_error",
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+            message=exc.message
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "code": exc.error_code,
+                    "message": exc.message,
+                }
+            },
+        )
+
+    # Catches all pydantic errors
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Invalid input data",
+                    "details": exc.errors()
+                }
+            }
+        )
+
+    # Catches all unexpected errors (500)
+    log.error(
+        "unhandled_exception",
+        exception=str(exc),
+        exc_info=True
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected error occurred",
+            }
+        },
+    )

@@ -1,7 +1,7 @@
-from src.interfaces.api.main import create_api_app
-from src.infrastructure.settings import Settings, get_settings
 import uvicorn
 
+from src.infrastructure.settings import Settings, get_settings
+from src.interfaces.api.main import create_api_app
 
 settings: Settings = get_settings()
 app = create_api_app()

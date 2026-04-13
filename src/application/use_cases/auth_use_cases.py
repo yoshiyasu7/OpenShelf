@@ -98,7 +98,7 @@ class AuthUseCases:
 
         user = await self._user_repository.get_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found.")
+            raise UserNotFoundError(f"User with id {user_id} not found")
 
         new_tokens = self._issue_tokens(user_id=user_id)
         await self._refresh_store.rotate(
@@ -136,6 +136,6 @@ class ValidateAccessTokenUseCase:
 
         user = await self._user_repository.get_by_id(user_id=payload.sub)
         if user is None:
-            raise UserNotFoundError("User not found.")
+            raise UserNotFoundError(f"User with id {payload.sub} not found")
 
         return user
