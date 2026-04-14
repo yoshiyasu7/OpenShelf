@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -24,11 +24,18 @@ class UserRepository(ABC):
 
     @abstractmethod
     async def create(
-        self,
-        *,
+        self, *,
         username: str,
         email: str | None,
         password_hash: str,
         is_admin: bool = False,
     ) -> UserModel:
+        pass
+
+    @abstractmethod
+    async def update(self, *, user_id: UUID, data: dict[str, Any]) -> UserModel | None:
+        pass
+
+    @abstractmethod
+    async def delete(self, *, user_id: UUID) -> bool:
         pass

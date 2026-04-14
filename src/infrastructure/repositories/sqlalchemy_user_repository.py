@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Any, override
 
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select, update
 
 from src.domain.repositories.user.main import UserRepository
 from src.infrastructure.database.models import UserModel
@@ -41,8 +41,7 @@ class SQLAlchemyUserRepository(UserRepository):
 
     @override
     async def create(
-        self,
-        *,
+        self, *,
         username: str,
         email: str | None,
         password_hash: str,
@@ -57,3 +56,26 @@ class SQLAlchemyUserRepository(UserRepository):
         self._session.add(user)
         await self._session.flush()
         return user
+
+    @override
+    async def update(self, *, user_id: UUID, data: dict[str, Any]) -> UserModel | None:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(**data)
+            .returning(UserModel)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+    @override
+    async def delete(self, *, user_id: UUID) -> bool:
+        stmt = (
+            delete(UserModel)
+            .where(UserModel.id == user_id)
+            .returning(UserModel.id)
+        )
+        result = await self._session.execute(stmt)
+        deleted_id = result.fetchone()
+        return deleted_id is not None

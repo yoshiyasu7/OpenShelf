@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserPublic(BaseModel):
@@ -8,5 +8,10 @@ class UserPublic(BaseModel):
 
     id: UUID
     username: str
-    email: str | None = None
+    email: EmailStr | None = None
     is_admin: bool
+
+
+class UpdateUserRequest(BaseModel):
+    username: str | None = Field(None, min_length=3, max_length=50)
+    email: EmailStr | None = None

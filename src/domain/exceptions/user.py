@@ -22,3 +22,17 @@ class InvalidCredentialsError(DomainError):
     status_code = status.HTTP_401_UNAUTHORIZED
     error_code = "INVALID_CREDENTIALS"
     message = "Invalid username or password"
+
+
+class UsernameAlreadyTakenError(DomainError):
+    """Exception raised when the username is already taken."""
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "USERNAME_ALREADY_TAKEN"
+    message = "This username is already taken"
+
+
+class EmailAlreadyTakenError(DomainError):
+    """Exception raised when the email is already taken."""
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "EMAIL_ALREADY_TAKEN"
+    message = "This email is already taken"

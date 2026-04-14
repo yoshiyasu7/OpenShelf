@@ -11,11 +11,14 @@ from src.application.dtos.user.main import UserPublic
 from src.dependencies import AuthService  # noqa: TC001
 from src.domain.exceptions.user import InvalidCredentialsError, UserNotFoundError
 
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(
+    tags=["Authentication"],
+    prefix="/auth",
+)
 
 
 @router.post(
-    "/auth/register",
+    "/register",
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -27,7 +30,7 @@ async def register_user(
     return RegisterResponse(user=UserPublic.model_validate(user))
 
 
-@router.post("/auth/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse)
 async def login_user(
     payload: LoginRequest,
     uc: AuthService,
@@ -43,7 +46,7 @@ async def login_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from exc
 
 
-@router.post("/auth/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=TokenResponse)
 async def refresh_tokens(
     payload: RefreshRequest,
     uc: AuthService,
@@ -59,7 +62,7 @@ async def refresh_tokens(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from exc
 
 
-@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     payload: RefreshRequest,
     uc: AuthService,

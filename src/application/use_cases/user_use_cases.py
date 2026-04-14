@@ -1,51 +1,29 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import IntegrityError
 
-from src.application.dtos.user.main import UserPublic
-from src.dependencies import ValidateTokenService  # noqa: TC001
-from src.domain.exceptions.user import InvalidCredentialsError, UserNotFoundError
+from src.domain.exceptions.user import (
+    EmailAlreadyTakenError,
+    UsernameAlreadyTakenError,
+    UserNotFoundError,
+)
 
 if TYPE_CHECKING:
     from uuid import UUID
 
+    from src.application.dtos.user.main import UpdateUserRequest
     from src.domain.repositories.user.main import UserRepository
     from src.infrastructure.database.models import UserModel
-
-TokenAuth = Annotated[HTTPAuthorizationCredentials | None, Depends(HTTPBearer(auto_error=False))]
-
-
-# Dependencies for protected endpoints
-async def get_current_user(
-    credentials: TokenAuth,
-    uc: ValidateTokenService,
-) -> UserPublic:
-    """Resolve authenticated user from bearer access token."""
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
-    try:
-        return UserPublic.model_validate(await uc.execute(access_token=credentials.credentials))
-    except (InvalidCredentialsError, UserNotFoundError) as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
-
-
-async def get_current_admin(
-    current_user: Annotated[UserPublic, Depends(get_current_user)],
-) -> UserPublic:
-    """Resolve authenticated admin user."""
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-    return current_user
-
-
-CurrentUserDep = Annotated[UserPublic, Depends(get_current_user)]
-AdminUserDep = Annotated[UserPublic, Depends(get_current_admin)]
 
 
 class UserUseCases:
     """
+    Core logic for managing user accounts and profiles.
+    This class handles finding, updating, and deleting users.
+
+    Notes:
+    - Ensures consistent state through atomic database operations.
+    - Translates infrastructure-level integrity violations into domain exceptions.
     """
 
     def __init__(self, *, user_repository: UserRepository) -> None:
@@ -57,5 +35,27 @@ class UserUseCases:
             raise UserNotFoundError(f"User with id {user_id} not found")
         return found_user
 
-    async def update_user(self, *, user: UserPublic) -> UserModel:
-        ...
+    async def update_user(self, *, user_id: UUID, payload: UpdateUserRequest) -> UserModel:
+        update_data = payload.model_dump(exclude_unset=True)
+        if not update_data:
+            user = await self._user_repository.get_by_id(user_id=user_id)
+            if not user:
+                raise UserNotFoundError(f"User with id {user_id} not found")
+            return user
+        try:
+            user = await self._user_repository.update(user_id=user_id, data=update_data)
+            if not user:
+                raise UserNotFoundError(f"User with id {user_id} not found")
+            return user
+        except IntegrityError as e:
+            error_msg = str(e.orig).lower()
+            if "users_username_key" in error_msg:
+                raise UsernameAlreadyTakenError() from e
+            if "users_email_key" in error_msg:
+                raise EmailAlreadyTakenError() from e
+            raise e
+
+    async def delete_user(self, *, user_id: UUID) -> None:
+        deleted = await self._user_repository.delete(user_id=user_id)
+        if not deleted:
+            raise UserNotFoundError(f"User with id {user_id} not found")
