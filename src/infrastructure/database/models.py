@@ -3,7 +3,20 @@
 from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Index, Integer, String, Table, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Table,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -82,8 +95,8 @@ class AuthorModel(Base):
     __tablename__ = 'authors'
 
     id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
-    name: Mapped[str] = mapped_column(String)
-    biography: Mapped[str] = mapped_column(Text)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    biography: Mapped[str] = mapped_column(Text, nullable=False)
     birthday: Mapped[date] = mapped_column(Date, index=True)
     books: Mapped[list["BookModel"]] = relationship(
         secondary="authors_books",
@@ -104,6 +117,9 @@ class AuthorModel(Base):
 
     __table_args__ = (
         CheckConstraint("birthday <= CURRENT_DATE", name="check_birthday_not_future"),
+        CheckConstraint("char_length(btrim(name)) > 0", name="check_authors_name_not_blank"),
+        CheckConstraint("char_length(biography) <= 10000", name="check_authors_biography_max_length"),
+        Index("ux_authors_name_lower", func.lower(name), unique=True),
     )
 
 
