@@ -5,6 +5,9 @@ run:
 run-dev:
 	find src -type d -name '__pycache__' -exec rm -r {} + && python -B -m src.interfaces.main
 
+test:
+	PYTHONDONTWRITEBYTECODE=1 poetry run pytest
+
 
 # Check formatting
 .DEFAULT_GOAL := check

@@ -5,6 +5,7 @@ from fastapi import Depends
 
 from src.dependencies.database import TxSessionDep  # noqa: TC001
 from src.infrastructure.auth.refresh_sessions import RefreshSessionStore
+from src.infrastructure.repositories.sqlalchemy_author_repository import SQLAlchemyAuthorRepository
 from src.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
 from src.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
 from src.infrastructure.services.jwt import JWTService
@@ -22,6 +23,10 @@ def get_refresh_store(session: TxSessionDep) -> RefreshSessionStore:
     return RefreshSessionStore(repository=repo)
 
 
+def get_author_repository(session: TxSessionDep) -> SQLAlchemyAuthorRepository:
+    return SQLAlchemyAuthorRepository(session=session)
+
+
 def get_user_repository(session: TxSessionDep) -> SQLAlchemyUserRepository:
     return SQLAlchemyUserRepository(session=session)
 
@@ -30,4 +35,5 @@ def get_user_repository(session: TxSessionDep) -> SQLAlchemyUserRepository:
 
 JWTDep = Annotated[JWTService, Depends(get_jwt_service)]
 RefreshStoreDep = Annotated[RefreshSessionStore, Depends(get_refresh_store)]
+AuthorRepoDep = Annotated[SQLAlchemyAuthorRepository, Depends(get_author_repository)]
 UserRepoDep = Annotated[SQLAlchemyUserRepository, Depends(get_user_repository)]

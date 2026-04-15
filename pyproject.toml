@@ -1,6 +1,6 @@
 [project]
 name = "openshelf"
-version = "0.13.0"
+version = "0.14.0"
 description = "RESTful API for managing a library catalog. The system allows you to manage information about books, authors, readers, and book loans."
 authors = [
     {name = "maxim.w",email = "max.wojw@gmail.com"}
@@ -43,8 +43,8 @@ pythonVersion = "3.14"
 typeCheckingMode = "recommended"
 
 include = ["src"]
-exclude = ["alembic"]
-ignore = ["alembic"]
+exclude = ["alembic", "tests"]
+ignore = ["alembic", "tests"]
 
 reportExplicitAny = false
 reportAny = false
@@ -60,7 +60,7 @@ reportUnknownArgumentType = false
 [tool.ruff]
 target-version = "py314"
 line-length = 120
-extend-exclude = ["alembic"]
+extend-exclude = ["alembic", "tests"]
 
 [tool.ruff.lint]
 select = [
