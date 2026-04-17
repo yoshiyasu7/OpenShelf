@@ -24,6 +24,15 @@ class SQLAlchemyAuthorRepository(AuthorRepository):
         return result.scalar_one_or_none()
 
     @override
+    async def get_by_ids(self, *, author_ids: list[UUID]) -> list[AuthorModel]:
+        if not author_ids:
+            return []
+
+        stmt = select(AuthorModel).where(AuthorModel.id.in_(author_ids))
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    @override
     async def exists_by_name(self, *, name: str, exclude_author_id: UUID | None = None) -> bool:
         normalized_name = name.strip()
         stmt = select(AuthorModel.id).where(func.lower(AuthorModel.name) == normalized_name.lower())

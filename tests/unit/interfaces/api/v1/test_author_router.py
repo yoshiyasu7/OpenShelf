@@ -9,7 +9,7 @@ import pytest
 from src.dependencies.auth import get_current_admin, get_current_user
 from src.dependencies.services import get_author_service
 from src.interfaces.api.v1.author.main import router as author_router
-from tests.helpers import make_author_model, make_user_public
+from tests.helpers import make_author_model, make_book_model, make_user_public
 
 
 @pytest.fixture
@@ -55,11 +55,12 @@ def test_create_author_returns_201(app: FastAPI, author_use_cases: AsyncMock) ->
     payload = response.json()
     assert payload["id"] == str(created.id)
     assert payload["name"] == "Leo Tolstoy"
+    assert "books" not in payload
 
 
 def test_get_authors_list_returns_paginated_response(app: FastAPI, author_use_cases: AsyncMock) -> None:
     client = TestClient(app)
-    author = make_author_model()
+    author = make_author_model(books=[make_book_model()])
     author_use_cases.get_authors_list.return_value = {
         "items": [author],
         "total": 1,
@@ -73,6 +74,7 @@ def test_get_authors_list_returns_paginated_response(app: FastAPI, author_use_ca
     payload = response.json()
     assert payload["total"] == 1
     assert payload["items"][0]["id"] == str(author.id)
+    assert len(payload["items"][0]["books"]) == 1
 
 
 def test_update_author_returns_403_when_admin_dependency_fails(

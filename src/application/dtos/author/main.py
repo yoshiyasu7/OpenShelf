@@ -28,6 +28,26 @@ class UpdateAuthorRequest(BaseModel):
         return " ".join(value.split()).strip()
 
 
+class AuthorBookResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    publication_date: date
+    available_instances: int
+
+
+class AuthorCreateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    biography: str
+    birthday: date
+    created_at: datetime
+    updated_at: datetime
+
+
 class AuthorResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +55,7 @@ class AuthorResponse(BaseModel):
     name: str
     biography: str
     birthday: date
+    books: list[AuthorBookResponse]
     created_at: datetime
     updated_at: datetime
 

@@ -18,6 +18,23 @@ def repository(session: AsyncMock) -> SQLAlchemyAuthorRepository:
 
 
 @pytest.mark.asyncio
+async def test_get_by_ids_returns_models(
+    repository: SQLAlchemyAuthorRepository,
+    session: AsyncMock,
+) -> None:
+    author = make_author_model()
+    result = Mock()
+    scalars = Mock()
+    scalars.all.return_value = [author]
+    result.scalars.return_value = scalars
+    session.execute.return_value = result
+
+    found_authors = await repository.get_by_ids(author_ids=[author.id])
+
+    assert found_authors == [author]
+
+
+@pytest.mark.asyncio
 async def test_exists_by_name_adds_exclude_filter_when_passed(
     repository: SQLAlchemyAuthorRepository,
     session: AsyncMock,

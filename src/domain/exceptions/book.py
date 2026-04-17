@@ -19,6 +19,6 @@ class BookAlreadyExistsError(DomainError):
 
 class InvalidPublicationDateError(DomainError):
     """Exception raised when book has invalid publication date."""
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     error_code = "INVALID_BOOK_PUBLICATION_DATE"
     message = "The publication date cannot be in the future or earlier than 1440"

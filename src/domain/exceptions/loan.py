@@ -12,7 +12,7 @@ class LoanNotFoundError(DomainError):
 
 class LoanLimitExceededError(DomainError):
     """Exception raised when book loan out of limit for user."""
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     error_code = "LOAN_LIMIT_EXCEEDED"
     message = "You have reached the maximum number of books allowed for loan"
 

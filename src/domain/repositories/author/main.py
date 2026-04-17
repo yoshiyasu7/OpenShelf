@@ -15,6 +15,10 @@ class AuthorRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_ids(self, *, author_ids: list[UUID]) -> list[AuthorModel]:
+        pass
+
+    @abstractmethod
     async def exists_by_name(self, *, name: str, exclude_author_id: UUID | None = None) -> bool:
         pass
 

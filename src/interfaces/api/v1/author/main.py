@@ -3,6 +3,7 @@ from uuid import UUID  # noqa: TC003
 from fastapi import APIRouter, status
 
 from src.application.dtos.author.main import (
+    AuthorCreateResponse,
     AuthorResponse,
     AuthorsListResponse,
     CreateAuthorRequest,
@@ -17,14 +18,14 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=AuthorResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=AuthorCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_author(
     _admin: AdminUserDep,
     payload: CreateAuthorRequest,
     uc: AuthorService
-) -> AuthorResponse:
+) -> AuthorCreateResponse:
     author = await uc.create_author(payload=payload)
-    return AuthorResponse.model_validate(author)
+    return AuthorCreateResponse.model_validate(author)
 
 
 @router.get("/", response_model=AuthorsListResponse)
