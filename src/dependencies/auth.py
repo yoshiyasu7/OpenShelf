@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -23,9 +24,13 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     try:
-        return UserPublic.model_validate(await uc.execute(access_token=credentials.credentials))
+        user = UserPublic.model_validate(await uc.execute(access_token=credentials.credentials))
     except (InvalidCredentialsError, UserNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+    # Propagate user_id to all subsequent logs in this request.
+    structlog.contextvars.bind_contextvars(user_id=str(user.id))
+    return user
 
 
 async def get_current_admin(

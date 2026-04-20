@@ -22,6 +22,14 @@ class APPSettings:
     log_level: str = field(
         default_factory=lambda: os.getenv("LOG_LEVEL", "DEBUG").upper()
     )
+    # None means: use per-environment default (dev=True, prod/test=False).
+    log_to_file: bool | None = field(
+        default_factory=lambda: (
+            None
+            if os.getenv("LOG_TO_FILE") is None
+            else os.getenv("LOG_TO_FILE", "").lower() == "true"
+        )
+    )
 
 
 @dataclass
