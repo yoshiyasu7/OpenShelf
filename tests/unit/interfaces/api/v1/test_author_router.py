@@ -108,3 +108,30 @@ def test_delete_author_returns_204(app: FastAPI, author_use_cases: AsyncMock) ->
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     author_use_cases.delete_author.assert_awaited_once()
+
+
+def test_get_author_returns_200(app: FastAPI, author_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    author = make_author_model(books=[make_book_model()])
+    author_use_cases.get_author.return_value = author
+
+    response = client.get(f"/api/v1/authors/{author.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    payload = response.json()
+    assert payload["id"] == str(author.id)
+    assert payload["books"][0]["id"] == str(author.books[0].id)
+
+
+def test_update_author_returns_200(app: FastAPI, author_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    author = make_author_model(name="Lev Tolstoy")
+    author_use_cases.update_author.return_value = author
+
+    response = client.patch(
+        f"/api/v1/authors/{author.id}",
+        json={"name": "Lev Tolstoy"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == "Lev Tolstoy"

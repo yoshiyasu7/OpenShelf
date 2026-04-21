@@ -64,4 +64,4 @@ class SQLAlchemySessionRepository:
             .values(revoked_at=now)
         )
         result = await self._session.execute(stmt)
-        return result.scalar_one_or_none is not None
+        return result.scalar_one_or_none() is not None

@@ -9,7 +9,9 @@ from tests.helpers import make_author_model
 
 @pytest.fixture
 def session() -> AsyncMock:
-    return AsyncMock()
+    session_mock = AsyncMock()
+    session_mock.add = Mock()
+    return session_mock
 
 
 @pytest.fixture
@@ -32,6 +34,12 @@ async def test_get_by_ids_returns_models(
     found_authors = await repository.get_by_ids(author_ids=[author.id])
 
     assert found_authors == [author]
+
+
+@pytest.mark.asyncio
+async def test_get_by_ids_returns_empty_for_empty_ids(repository: SQLAlchemyAuthorRepository) -> None:
+    found_authors = await repository.get_by_ids(author_ids=[])
+    assert found_authors == []
 
 
 @pytest.mark.asyncio
@@ -100,3 +108,42 @@ async def test_delete_returns_false_when_nothing_deleted(
     deleted = await repository.delete(author_id=uuid4())
 
     assert deleted is False
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_returns_model(repository: SQLAlchemyAuthorRepository, session: AsyncMock) -> None:
+    author = make_author_model()
+    result = Mock()
+    result.scalar_one_or_none.return_value = author
+    session.execute.return_value = result
+
+    found = await repository.get_by_id(author_id=author.id)
+
+    assert found == author
+
+
+@pytest.mark.asyncio
+async def test_create_persists_and_returns_author(repository: SQLAlchemyAuthorRepository, session: AsyncMock) -> None:
+    data = {
+        "name": "Leo Tolstoy",
+        "biography": "Russian writer",
+        "birthday": make_author_model().birthday,
+    }
+
+    created = await repository.create(data=data)
+
+    assert created.name == "Leo Tolstoy"
+    session.add.assert_called_once_with(created)
+    session.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_returns_model(repository: SQLAlchemyAuthorRepository, session: AsyncMock) -> None:
+    updated_author = make_author_model(name="Updated")
+    result = Mock()
+    result.scalar_one_or_none.return_value = updated_author
+    session.execute.return_value = result
+
+    updated = await repository.update(author_id=uuid4(), data={"name": "Updated"})
+
+    assert updated == updated_author

@@ -125,3 +125,16 @@ async def test_delete_author_raises_when_entity_missing(use_cases: AuthorUseCase
 
     with pytest.raises(AuthorNotFoundError):
         await use_cases.delete_author(author_id=author_id)
+
+
+@pytest.mark.asyncio
+async def test_update_author_returns_updated_entity(use_cases: AuthorUseCases, author_repo: AsyncMock) -> None:
+    author_id = uuid4()
+    payload = UpdateAuthorRequest(name="Lev Tolstoy")
+    updated = make_author_model(author_id=author_id, name="Lev Tolstoy")
+    author_repo.exists_by_name.return_value = False
+    author_repo.update.return_value = updated
+
+    result = await use_cases.update_author(author_id=author_id, payload=payload)
+
+    assert result == updated

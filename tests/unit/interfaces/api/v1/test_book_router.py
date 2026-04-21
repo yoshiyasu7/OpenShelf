@@ -86,3 +86,52 @@ def test_return_book_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> Non
     payload = response.json()
     assert payload["loan"]["id"] == str(loan.id)
     assert payload["available_instances"] == 4
+
+
+def test_get_books_list_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    book = make_book_model(authors=[make_author_model()])
+    book_use_cases.get_books_list.return_value = {
+        "items": [book],
+        "total": 1,
+        "limit": 10,
+        "offset": 0,
+    }
+
+    response = client.get("/api/v1/books/?limit=10&offset=0")
+
+    assert response.status_code == status.HTTP_200_OK
+    payload = response.json()
+    assert payload["items"][0]["id"] == str(book.id)
+    assert payload["items"][0]["authors"][0]["id"] == str(book.authors[0].id)
+
+
+def test_get_book_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    book = make_book_model(authors=[make_author_model()])
+    book_use_cases.get_book.return_value = book
+
+    response = client.get(f"/api/v1/books/{book.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == str(book.id)
+
+
+def test_update_book_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    book = make_book_model(authors=[make_author_model()], title="Updated title")
+    book_use_cases.update_book.return_value = book
+
+    response = client.patch(f"/api/v1/books/{book.id}", json={"title": "Updated title"})
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["title"] == "Updated title"
+
+
+def test_delete_book_returns_204(app: FastAPI, book_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+
+    response = client.delete(f"/api/v1/books/{uuid4()}")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    book_use_cases.delete_book.assert_awaited_once()
