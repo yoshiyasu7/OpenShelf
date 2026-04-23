@@ -9,6 +9,7 @@ from src.application.use_cases.book_use_cases import BookUseCases
 from src.domain.exceptions.author import AuthorNotFoundError
 from src.domain.exceptions.book import BookAlreadyExistsError, BookNotFoundError, InvalidPublicationDateError
 from src.domain.exceptions.loan import (
+    AlreadyBorrowingBookError,
     AlreadyReturnedError,
     ConcurrencyConflictError,
     LoanLimitExceededError,
@@ -25,7 +26,9 @@ from tests.helpers import make_author_model, make_book_loan_model, make_book_mod
 
 @pytest.fixture
 def book_repo() -> AsyncMock:
-    return AsyncMock(spec=BookRepository)
+    repo = AsyncMock(spec=BookRepository)
+    repo.has_open_loan_for_book = AsyncMock(return_value=False)
+    return repo
 
 
 @pytest.fixture
@@ -127,6 +130,29 @@ async def test_issue_book_raises_when_user_limit_exceeded(
 
     with pytest.raises(LoanLimitExceededError):
         await use_cases.issue_book(user_id=user_id, book_id=book_id)
+
+    book_repo.has_open_loan_for_book.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_issue_book_raises_when_already_borrowing_same_book(
+    use_cases: BookUseCases,
+    book_repo: AsyncMock,
+    user_repo: AsyncMock,
+) -> None:
+    book_id = uuid4()
+    user_id = uuid4()
+    user = AsyncMock()
+    user.books_on_hand = 1
+    book_repo.has_overdue_loans.return_value = False
+    user_repo.get_by_id.return_value = user
+    book_repo.has_open_loan_for_book.return_value = True
+
+    with pytest.raises(AlreadyBorrowingBookError):
+        await use_cases.issue_book(user_id=user_id, book_id=book_id)
+
+    book_repo.has_open_loan_for_book.assert_awaited_once_with(user_id=user_id, book_id=book_id)
+    book_repo.take_available_instance.assert_not_awaited()
 
 
 @pytest.mark.asyncio

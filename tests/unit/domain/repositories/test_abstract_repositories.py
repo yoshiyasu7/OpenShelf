@@ -28,6 +28,9 @@ async def test_book_repository_abstract_methods_are_callable() -> None:
     assert await BookRepository.update(object(), book_id=uuid4(), data={}) is None
     assert await BookRepository.delete(object(), book_id=uuid4()) is None
     assert await BookRepository.has_overdue_loans(object(), user_id=uuid4(), as_of=None) is None
+    assert await BookRepository.has_open_loan_for_book(
+        object(), user_id=uuid4(), book_id=uuid4()
+    ) is None
     assert await BookRepository.take_available_instance(object(), book_id=uuid4()) is None
     assert await BookRepository.return_instance(object(), book_id=uuid4()) is None
     assert await BookRepository.create_loan(object(), user_id=uuid4(), book_id=uuid4(), due_date=None) is None

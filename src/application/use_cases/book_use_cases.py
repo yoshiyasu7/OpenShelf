@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 from src.domain.exceptions.author import AuthorNotFoundError
 from src.domain.exceptions.book import BookAlreadyExistsError, BookNotFoundError, InvalidPublicationDateError
 from src.domain.exceptions.loan import (
+    AlreadyBorrowingBookError,
     AlreadyReturnedError,
     ConcurrencyConflictError,
     LoanLimitExceededError,
@@ -109,6 +110,8 @@ class BookUseCases:
             raise UserNotFoundError(f"User with id {user_id} not found")
         if user.books_on_hand >= MAX_BOOKS_ON_HAND:
             raise LoanLimitExceededError()
+        if await self._book_repository.has_open_loan_for_book(user_id=user_id, book_id=book_id):
+            raise AlreadyBorrowingBookError()
 
         reserved_book = await self._book_repository.take_available_instance(book_id=book_id)
         if not reserved_book:

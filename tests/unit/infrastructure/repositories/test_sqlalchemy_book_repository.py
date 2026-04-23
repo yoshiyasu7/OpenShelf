@@ -91,6 +91,21 @@ async def test_has_overdue_loans_returns_false_when_not_found(
 
 
 @pytest.mark.asyncio
+async def test_has_open_loan_for_book_returns_false_when_not_found(
+    repository: SQLAlchemyBookRepository,
+    session: AsyncMock,
+) -> None:
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+    session.execute.return_value = result
+
+    uid, bid = uuid4(), uuid4()
+    has_open = await repository.has_open_loan_for_book(user_id=uid, book_id=bid)
+
+    assert has_open is False
+
+
+@pytest.mark.asyncio
 async def test_get_by_id_returns_book(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
     book = make_book_model()
     result = Mock()

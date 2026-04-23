@@ -43,3 +43,10 @@ class ConcurrencyConflictError(DomainError):
     status_code = status.HTTP_409_CONFLICT
     error_code = "CONCURRENCY_CONFLICT"
     message = "The book was just taken by another user. Please try again"
+
+
+class AlreadyBorrowingBookError(DomainError):
+    """User already has an unreturned loan for this book."""
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "ALREADY_BORROWING_BOOK"
+    message = "You already have a copy of this book on loan"

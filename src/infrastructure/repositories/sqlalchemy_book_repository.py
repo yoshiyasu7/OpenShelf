@@ -101,6 +101,20 @@ class SQLAlchemyBookRepository(BookRepository):
         return result.scalar_one_or_none() is not None
 
     @override
+    async def has_open_loan_for_book(self, *, user_id: UUID, book_id: UUID) -> bool:
+        stmt = (
+            select(BookLoanModel.id)
+            .where(
+                BookLoanModel.user_id == user_id,
+                BookLoanModel.book_id == book_id,
+                BookLoanModel.returned_at.is_(None),
+            )
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    @override
     async def take_available_instance(self, *, book_id: UUID) -> BookModel | None:
         stmt = (
             update(BookModel)

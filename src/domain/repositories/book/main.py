@@ -46,6 +46,10 @@ class BookRepository(ABC):
         pass
 
     @abstractmethod
+    async def has_open_loan_for_book(self, *, user_id: UUID, book_id: UUID) -> bool:
+        pass
+
+    @abstractmethod
     async def take_available_instance(self, *, book_id: UUID) -> BookModel | None:
         pass
 
