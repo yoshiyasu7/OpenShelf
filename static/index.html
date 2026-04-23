@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- База API: по умолчанию тот же origin (uvicorn раздаёт static + /api). Для отдельного фронта укажите полный URL, например http://127.0.0.1:8000/api/v1 -->
+    <meta name="api-base" content="/api/v1" />
+    <title>OpenShelf</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <a href="#books" class="logo" data-nav>OpenShelf</a>
+        <nav class="nav" id="nav-auth" hidden>
+          <a href="#books" data-nav>Книги</a>
+          <a href="#authors" data-nav>Авторы</a>
+          <a href="#profile" data-nav>Профиль</a>
+          <button type="button" class="btn btn-ghost" id="btn-logout">Выйти</button>
+        </nav>
+      </header>
+
+      <p class="msg" id="msg" role="status" hidden></p>
+
+      <main class="main">
+        <section id="view-login" class="view card" hidden>
+          <h1>Вход</h1>
+          <form id="form-login" class="form">
+            <label>Логин или email
+              <input name="identifier" type="text" required autocomplete="username" minlength="3" />
+            </label>
+            <label>Пароль
+              <input name="password" type="password" required minlength="8" autocomplete="current-password" />
+            </label>
+            <button type="submit" class="btn">Войти</button>
+            <p class="form-alt">Нет аккаунта? <a href="#register" data-nav>Зарегистрироваться</a></p>
+          </form>
+        </section>
+
+        <section id="view-register" class="view card" hidden>
+          <h1>Регистрация</h1>
+          <form id="form-register" class="form">
+            <label>Имя пользователя
+              <input name="username" type="text" required minlength="3" maxlength="50" />
+            </label>
+            <label>Email (необязательно)
+              <input name="email" type="email" />
+            </label>
+            <label>Пароль
+              <input name="password" type="password" required minlength="8" />
+            </label>
+            <button type="submit" class="btn">Создать аккаунт</button>
+            <p class="form-alt">Уже есть аккаунт? <a href="#login" data-nav>Войти</a></p>
+          </form>
+        </section>
+
+        <section id="view-books" class="view" hidden>
+          <div class="toolbar">
+            <div class="toolbar-top">
+              <h1>Каталог</h1>
+              <a href="#admin/books" class="btn btn-ghost admin-only" hidden data-nav>Создать / обновить</a>
+            </div>
+            <form id="form-books-search" class="search-row">
+              <input type="search" name="q" placeholder="Поиск по названию…" />
+              <button type="submit" class="btn">Найти</button>
+            </form>
+          </div>
+          <ul class="list" id="book-list"></ul>
+          <div class="pagination">
+            <button type="button" class="btn btn-ghost" id="books-prev" disabled>Назад</button>
+            <span id="books-page-info">—</span>
+            <button type="button" class="btn btn-ghost" id="books-next" disabled>Вперёд</button>
+          </div>
+        </section>
+
+        <section id="view-book" class="view" hidden>
+          <a href="#books" class="back" data-nav>← К списку</a>
+          <div id="book-detail" class="card book-detail"></div>
+        </section>
+
+        <section id="view-authors" class="view" hidden>
+          <div class="toolbar">
+            <div class="toolbar-top">
+              <h1>Авторы</h1>
+              <a href="#admin/authors" class="btn btn-ghost admin-only" hidden data-nav>Создать / обновить</a>
+            </div>
+            <form id="form-authors-search" class="search-row">
+              <input type="search" name="q" placeholder="Поиск по имени…" />
+              <button type="submit" class="btn">Найти</button>
+            </form>
+          </div>
+          <ul class="list" id="author-list"></ul>
+          <div class="pagination">
+            <button type="button" class="btn btn-ghost" id="authors-prev" disabled>Назад</button>
+            <span id="authors-page-info">—</span>
+            <button type="button" class="btn btn-ghost" id="authors-next" disabled>Вперёд</button>
+          </div>
+        </section>
+
+        <section id="view-author" class="view" hidden>
+          <a href="#authors" class="back" data-nav>← К авторам</a>
+          <div id="author-detail" class="card book-detail"></div>
+        </section>
+
+        <section id="view-profile" class="view card" hidden>
+          <h1>Профиль</h1>
+          <div id="profile-content"></div>
+          <h2 class="h2">Книги на руках</h2>
+          <p class="hint">После «Взять книгу» выдача отображается здесь — можно сдать книгу обратно в библиотеку.</p>
+          <ul class="list" id="loans-list"></ul>
+        </section>
+
+        <section id="view-admin-authors" class="view admin-only" hidden>
+          <a href="#authors" class="back" data-nav>← К авторам</a>
+          <h1>Авторы</h1>
+          <div class="admin-stack">
+            <div class="card">
+              <h2 class="h2">Новый автор</h2>
+              <form id="form-admin-author-create" class="form">
+                <label>Имя
+                  <input name="name" type="text" required minlength="2" />
+                </label>
+                <label>Биография
+                  <textarea name="biography" required rows="4"></textarea>
+                </label>
+                <label>Дата рождения
+                  <input name="birthday" type="date" required />
+                </label>
+                <button type="submit" class="btn">Создать</button>
+              </form>
+            </div>
+            <div class="toolbar">
+              <h2 class="h2">Список</h2>
+              <form id="form-admin-authors-search" class="search-row">
+                <input type="search" name="q" placeholder="По имени…" />
+                <button type="submit" class="btn">Поиск</button>
+              </form>
+            </div>
+            <ul class="list" id="admin-authors-list"></ul>
+            <div class="pagination">
+              <button type="button" class="btn btn-ghost" id="admin-authors-prev" disabled>Назад</button>
+              <span id="admin-authors-page-info">—</span>
+              <button type="button" class="btn btn-ghost" id="admin-authors-next" disabled>Вперёд</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-admin-author" class="view admin-only" hidden>
+          <a href="#admin/authors" class="back" data-nav>← К списку авторов</a>
+          <h1>Редактирование автора</h1>
+          <p class="meta" id="admin-author-meta"></p>
+          <form id="form-admin-author-edit" class="form card" hidden>
+            <input type="hidden" name="id" id="admin-author-edit-id" />
+            <label>Имя
+              <input name="name" type="text" required minlength="2" />
+            </label>
+            <label>Биография
+              <textarea name="biography" required rows="4"></textarea>
+            </label>
+            <label>Дата рождения
+              <input name="birthday" type="date" required />
+            </label>
+            <button type="submit" class="btn">Сохранить</button>
+          </form>
+        </section>
+
+        <section id="view-admin-books" class="view admin-only" hidden>
+          <a href="#books" class="back" data-nav>← К каталогу</a>
+          <h1>Книги</h1>
+          <div class="admin-stack">
+            <div class="card">
+              <h2 class="h2">Новая книга</h2>
+              <form id="form-admin-book-create" class="form">
+                <label>Название
+                  <input name="title" type="text" required />
+                </label>
+                <label>Описание
+                  <textarea name="description" required rows="3"></textarea>
+                </label>
+                <label>Дата публикации
+                  <input name="publication_date" type="date" required />
+                </label>
+                <label>Жанры (через запятую)
+                  <input name="genres" type="text" placeholder="детектив, зарубежная" />
+                </label>
+                <label>ID автора (UUID)
+                  <input name="author_id" type="text" required placeholder="из карточки автора" />
+                </label>
+                <label>Доступно экземпляров
+                  <input name="available_instances" type="number" min="0" value="1" />
+                </label>
+                <button type="submit" class="btn">Создать</button>
+              </form>
+            </div>
+            <div class="toolbar">
+              <h2 class="h2">Список</h2>
+              <form id="form-admin-books-search" class="search-row">
+                <input type="search" name="q" placeholder="По названию…" />
+                <button type="submit" class="btn">Поиск</button>
+              </form>
+            </div>
+            <ul class="list" id="admin-books-list"></ul>
+            <div class="pagination">
+              <button type="button" class="btn btn-ghost" id="admin-books-prev" disabled>Назад</button>
+              <span id="admin-books-page-info">—</span>
+              <button type="button" class="btn btn-ghost" id="admin-books-next" disabled>Вперёд</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-admin-book" class="view admin-only" hidden>
+          <a href="#admin/books" class="back" data-nav>← К списку книг</a>
+          <h1>Редактирование книги</h1>
+          <p class="meta" id="admin-book-meta"></p>
+          <form id="form-admin-book-edit" class="form card" hidden>
+            <input type="hidden" name="id" id="admin-book-edit-id" />
+            <p
+              class="meta authors-readonly"
+              id="admin-book-authors-hint"
+              title="Поле не изменяемо"
+              hidden
+            ></p>
+            <label>Название
+              <input name="title" type="text" required />
+            </label>
+            <label>Описание
+              <textarea name="description" required rows="3"></textarea>
+            </label>
+            <label>Дата публикации
+              <input name="publication_date" type="date" required />
+            </label>
+            <label>Жанры (через запятую)
+              <input name="genres" type="text" />
+            </label>
+            <label>Доступно экземпляров
+              <input name="available_instances" type="number" min="0" required />
+            </label>
+            <button type="submit" class="btn">Сохранить</button>
+          </form>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <a id="api-docs-link" href="#" target="_blank" rel="noreferrer">OpenAPI /docs</a>
+      </footer>
+    </div>
+    <script src="app.js" defer></script>
+  </body>
+</html>

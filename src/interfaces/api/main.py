@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.infrastructure.database.provider import init_db_manager
 from src.infrastructure.logging.config import configure_logging
@@ -70,5 +72,14 @@ def create_api_app() -> FastAPI:
     )
 
     app.include_router(api_v1_router, prefix="/api")
+
+    # Project root is four levels above this file: src/interfaces/api/main.py
+    static_dir = Path(__file__).resolve().parent.parent.parent.parent / "static"
+    if static_dir.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=static_dir, html=True),
+            name="static",
+        )
 
     return app
