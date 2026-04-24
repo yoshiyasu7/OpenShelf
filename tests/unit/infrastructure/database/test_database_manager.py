@@ -88,7 +88,7 @@ async def test_get_session_yields_session() -> None:
 @pytest.mark.asyncio
 async def test_health_check_with_engine_and_without_engine() -> None:
     manager = DatabaseManager("postgresql+asyncpg://user:pass@localhost/db")
-    assert await manager.health_check() == {}
+    assert await manager.health_check() == {"status": "down", "available": False}
 
     pool = Mock()
     pool.size.return_value = 1
@@ -97,10 +97,18 @@ async def test_health_check_with_engine_and_without_engine() -> None:
     pool.overflow.return_value = 4
     pool.invalid.return_value = 5
     manager._engine = Mock(pool=pool)
+    session = AsyncMock()
 
+    @asynccontextmanager
+    async def fake_session_cm():
+        yield session
+
+    manager._session_factory = fake_session_cm
     health = await manager.health_check()
 
     assert health == {
+        "status": "up",
+        "available": True,
         "pool_size": 1,
         "checked_in": 2,
         "checked_out": 3,

@@ -2,6 +2,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, override
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.infrastructure.interfaces.database import DatabaseInterface
@@ -91,16 +92,32 @@ class DatabaseManager(DatabaseInterface):
     async def health_check(self) -> dict[str, object]:
         """Check if the database is healthy and accessible."""
         if self._engine is None:
-            return {}
+            return {"status": "down", "available": False}
 
         pool = self._engine.pool
-        return {
+        pool_state: dict[str, object] = {
             "pool_size": pool.size(),  # pyright: ignore[reportAttributeAccessIssue]
             "checked_in": pool.checkedin(),  # pyright: ignore[reportAttributeAccessIssue]
             "checked_out": pool.checkedout(),  # pyright: ignore[reportAttributeAccessIssue]
             "overflow": pool.overflow(),  # pyright: ignore[reportAttributeAccessIssue]
             "invalid": pool.invalid(),  # pyright: ignore[reportAttributeAccessIssue]
         }
+
+        if self._session_factory is None:
+            return {"status": "down", "available": False, **pool_state}
+
+        try:
+            async with self.get_session() as session:
+                await session.execute(text("SELECT 1"))
+        except Exception as exc:
+            return {
+                "status": "degraded",
+                "available": False,
+                "error": str(exc),
+                **pool_state,
+            }
+
+        return {"status": "up", "available": True, **pool_state}
 
     @override
     def __repr__(self) -> str:

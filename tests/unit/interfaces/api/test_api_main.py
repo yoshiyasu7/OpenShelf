@@ -30,4 +30,5 @@ def test_create_api_app_builds_application(monkeypatch: pytest.MonkeyPatch) -> N
 
     assert isinstance(app, FastAPI)
     assert app.title == "OpenShelf"
+    assert any(route.path == "/health" for route in app.routes)
     assert any(route.path == "/api/v1/auth/login" for route in app.routes)

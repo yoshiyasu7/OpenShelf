@@ -13,6 +13,7 @@ from src.infrastructure.logging.middleware import (
     exception_handler,
 )
 from src.infrastructure.settings.main import get_settings
+from src.interfaces.api.health.main import router as health_router
 from src.interfaces.api.v1.main import api_v1_router
 
 if TYPE_CHECKING:
@@ -71,6 +72,7 @@ def create_api_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    app.include_router(health_router)
     app.include_router(api_v1_router, prefix="/api")
 
     # Project root is four levels above this file: src/interfaces/api/main.py
