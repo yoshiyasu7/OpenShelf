@@ -1,38 +1,38 @@
 """User Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainError, status
+from src.domain.exceptions.base import AuthenticationError, ConflictError, NotFoundError
 
 
-class UserNotFoundError(DomainError):
+class UserNotFoundError(NotFoundError):
     """Exception raised when user not found."""
-    status_code = status.HTTP_404_NOT_FOUND
+
     error_code = "USER_NOT_FOUND"
     message = "User was not found"
 
 
-class UserAlreadyExistsError(DomainError):
+class UserAlreadyExistsError(ConflictError):
     """Exception raised when user already exists with username/email."""
-    status_code = status.HTTP_409_CONFLICT
+
     error_code = "USER_ALREADY_EXISTS"
     message = "User with this username or email already exists"
 
 
-class InvalidCredentialsError(DomainError):
+class InvalidCredentialsError(AuthenticationError):
     """Exception raised when user's credentials invalid."""
-    status_code = status.HTTP_401_UNAUTHORIZED
+
     error_code = "INVALID_CREDENTIALS"
     message = "Invalid username or password"
 
 
-class UsernameAlreadyTakenError(DomainError):
+class UsernameAlreadyTakenError(ConflictError):
     """Exception raised when the username is already taken."""
-    status_code = status.HTTP_409_CONFLICT
+
     error_code = "USERNAME_ALREADY_TAKEN"
     message = "This username is already taken"
 
 
-class EmailAlreadyTakenError(DomainError):
+class EmailAlreadyTakenError(ConflictError):
     """Exception raised when the email is already taken."""
-    status_code = status.HTTP_409_CONFLICT
+
     error_code = "EMAIL_ALREADY_TAKEN"
     message = "This email is already taken"

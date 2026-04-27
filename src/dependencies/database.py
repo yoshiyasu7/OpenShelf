@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 # --- CORE DEPENDENCIES ---
 
+
 class DatabaseProvider(Protocol):
     def get_session(self) -> AbstractAsyncContextManager[AsyncSession]: ...
 
@@ -26,6 +27,7 @@ DBProviderDep = Annotated[DatabaseProvider, Depends(get_db_provider)]
 
 
 # --- DATABASE SESSIONS ---
+
 
 async def get_db_session(
     provider: DBProviderDep,

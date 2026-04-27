@@ -3,15 +3,10 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
 from src.application.dtos.user.main import UpdateUserRequest
 from src.application.use_cases.user_use_cases import UserUseCases
-from src.domain.exceptions.user import (
-    EmailAlreadyTakenError,
-    UsernameAlreadyTakenError,
-    UserNotFoundError,
-)
+from src.domain.exceptions.user import UserNotFoundError
 
 
 @pytest.fixture
@@ -84,33 +79,6 @@ async def test_update_user_returns_updated_user(use_cases: UserUseCases, user_re
     result = await use_cases.update_user(user_id=user.id, payload=UpdateUserRequest(username="new-name"))
 
     assert result is user
-
-
-@pytest.mark.asyncio
-async def test_update_user_maps_username_integrity_error(use_cases: UserUseCases, user_repo: AsyncMock) -> None:
-    err = IntegrityError("stmt", {}, Exception("users_username_key"))
-    user_repo.update.side_effect = err
-
-    with pytest.raises(UsernameAlreadyTakenError):
-        await use_cases.update_user(user_id=uuid4(), payload=UpdateUserRequest(username="john"))
-
-
-@pytest.mark.asyncio
-async def test_update_user_maps_email_integrity_error(use_cases: UserUseCases, user_repo: AsyncMock) -> None:
-    err = IntegrityError("stmt", {}, Exception("users_email_key"))
-    user_repo.update.side_effect = err
-
-    with pytest.raises(EmailAlreadyTakenError):
-        await use_cases.update_user(user_id=uuid4(), payload=UpdateUserRequest(email="a@b.com"))
-
-
-@pytest.mark.asyncio
-async def test_update_user_reraises_unknown_integrity_error(use_cases: UserUseCases, user_repo: AsyncMock) -> None:
-    err = IntegrityError("stmt", {}, Exception("other_constraint"))
-    user_repo.update.side_effect = err
-
-    with pytest.raises(IntegrityError):
-        await use_cases.update_user(user_id=uuid4(), payload=UpdateUserRequest(username="john"))
 
 
 @pytest.mark.asyncio

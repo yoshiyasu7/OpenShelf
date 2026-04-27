@@ -1,7 +1,11 @@
-from typing import Annotated
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from fastapi import Depends
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from datetime import date, datetime
+    from uuid import UUID
 
 
 class QueryFilterParams(BaseModel):
@@ -10,4 +14,18 @@ class QueryFilterParams(BaseModel):
     name_query: str | None = Field(None, description="Search by name (partial match)")
 
 
-QueryFilterParamsDep = Annotated[QueryFilterParams, Depends()]
+@dataclass(slots=True, frozen=True)
+class PaginatedResult[T]:
+    items: list[T]
+    total: int
+    limit: int
+    offset: int
+
+
+@dataclass(slots=True, frozen=True)
+class OpenLoanItem:
+    loan_id: UUID
+    book_id: UUID
+    title: str | None
+    issued_at: datetime
+    due_date: date

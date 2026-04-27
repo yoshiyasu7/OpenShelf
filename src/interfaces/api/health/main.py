@@ -31,7 +31,7 @@ def _collect_app_load() -> AppLoad:
     load_averages: tuple[float, float, float] | None
     try:
         load_averages = os.getloadavg()
-    except (AttributeError, OSError):
+    except AttributeError, OSError:
         load_averages = None
 
     return AppLoad(

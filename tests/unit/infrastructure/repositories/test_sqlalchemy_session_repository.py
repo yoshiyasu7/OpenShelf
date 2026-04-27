@@ -22,10 +22,10 @@ def repository(session: AsyncMock) -> SQLAlchemySessionRepository:
 @pytest.mark.asyncio
 async def test_create_adds_and_flushes(repository: SQLAlchemySessionRepository, session: AsyncMock) -> None:
     now = datetime.now(UTC)
-    model = await repository.create(user_id=uuid4(), token_hash="hash", expires_at=now + timedelta(days=1))
 
-    assert model.token_hash == "hash"
-    session.add.assert_called_once_with(model)
+    await repository.create(user_id=uuid4(), token_hash="hash", expires_at=now + timedelta(days=1))
+
+    session.add.assert_called_once()
     session.flush.assert_awaited_once()
 
 

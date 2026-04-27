@@ -55,6 +55,8 @@ class BookResponse(BaseModel):
 
 
 class BooksListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     items: list[BookResponse]
     total: int
     limit: int
@@ -83,8 +85,10 @@ class ReturnBookResponse(BaseModel):
 
 
 class UserOpenLoanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     loan_id: UUID
     book_id: UUID
-    title: str
+    title: str | None
     issued_at: datetime
     due_date: date

@@ -5,14 +5,14 @@ if TYPE_CHECKING:
     from datetime import date
     from uuid import UUID
 
-    from src.infrastructure.database.models import BookLoanModel, BookModel
+    from src.domain.entities import Book, BookLoan
 
 
 class BookRepository(ABC):
     """Abstract repository for book and loan persistence."""
 
     @abstractmethod
-    async def get_by_id(self, *, book_id: UUID) -> BookModel | None:
+    async def get_by_id(self, *, book_id: UUID) -> Book | None:
         pass
 
     @abstractmethod
@@ -20,7 +20,7 @@ class BookRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, *, data: dict[str, Any]) -> BookModel:
+    async def create(self, *, data: dict[str, Any]) -> Book:
         pass
 
     @abstractmethod
@@ -30,11 +30,11 @@ class BookRepository(ABC):
         limit: int,
         offset: int,
         name_query: str | None,
-    ) -> tuple[list[BookModel], int]:
+    ) -> tuple[list[Book], int]:
         pass
 
     @abstractmethod
-    async def update(self, *, book_id: UUID, data: dict[str, Any]) -> BookModel | None:
+    async def update(self, *, book_id: UUID, data: dict[str, Any]) -> Book | None:
         pass
 
     @abstractmethod
@@ -50,29 +50,29 @@ class BookRepository(ABC):
         pass
 
     @abstractmethod
-    async def take_available_instance(self, *, book_id: UUID) -> BookModel | None:
+    async def take_available_instance(self, *, book_id: UUID) -> Book | None:
         pass
 
     @abstractmethod
-    async def return_instance(self, *, book_id: UUID) -> BookModel | None:
+    async def return_instance(self, *, book_id: UUID) -> Book | None:
         pass
 
     @abstractmethod
-    async def create_loan(self, *, user_id: UUID, book_id: UUID, due_date: date) -> BookLoanModel:
+    async def create_loan(self, *, user_id: UUID, book_id: UUID, due_date: date) -> BookLoan:
         pass
 
     @abstractmethod
-    async def get_loan_by_id(self, *, loan_id: UUID) -> BookLoanModel | None:
+    async def get_loan_by_id(self, *, loan_id: UUID) -> BookLoan | None:
         pass
 
     @abstractmethod
-    async def get_open_loan_by_id(self, *, loan_id: UUID) -> BookLoanModel | None:
+    async def get_open_loan_by_id(self, *, loan_id: UUID) -> BookLoan | None:
         pass
 
     @abstractmethod
-    async def mark_loan_returned(self, *, loan_id: UUID) -> BookLoanModel | None:
+    async def mark_loan_returned(self, *, loan_id: UUID) -> BookLoan | None:
         pass
 
     @abstractmethod
-    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoanModel]:
+    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoan]:
         pass

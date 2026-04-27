@@ -9,8 +9,8 @@ from src.application.dtos.author.main import (
     CreateAuthorRequest,
     UpdateAuthorRequest,
 )
-from src.application.dtos.main import QueryFilterParamsDep  # noqa: TC001
 from src.dependencies import AdminUserDep, AuthorService, CurrentUserDep  # noqa: TC001
+from src.dependencies.query_filters import QueryFilterParamsDep  # noqa: TC001
 
 router = APIRouter(
     tags=["Authors"],

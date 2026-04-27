@@ -11,21 +11,27 @@ from src.application.use_cases.user_use_cases import UserUseCases
 from src.dependencies.infrastructure import (  # noqa: TC001
     AuthorRepoDep,
     BookRepoDep,
-    JWTDep,
+    PasswordHasherDep,
     RefreshStoreDep,
+    SettingsDep,
+    TokenServiceDep,
     UserRepoDep,
 )
 
 
 def get_auth_service(
-    jwt: JWTDep,
+    token_service: TokenServiceDep,
     user_repo: UserRepoDep,
     refresh_store: RefreshStoreDep,
+    password_hasher: PasswordHasherDep,
+    settings: SettingsDep,
 ) -> AuthUseCases:
     return AuthUseCases(
         user_repository=user_repo,
-        jwt=jwt,
+        token_service=token_service,
         refresh_store=refresh_store,
+        password_hasher=password_hasher,
+        refresh_token_expire_days=settings.jwt.refresh_token_expire_days,
     )
 
 
@@ -50,10 +56,10 @@ def get_book_service(
 
 
 def get_validate_token_service(
-    jwt: JWTDep,
+    token_service: TokenServiceDep,
     user_repo: UserRepoDep,
 ) -> ValidateAccessTokenUseCase:
-    return ValidateAccessTokenUseCase(jwt=jwt, user_repository=user_repo)
+    return ValidateAccessTokenUseCase(token_service=token_service, user_repository=user_repo)
 
 
 # --- PUBLIC TYPE ALIASES ---

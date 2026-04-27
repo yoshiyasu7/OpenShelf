@@ -61,6 +61,8 @@ class AuthorResponse(BaseModel):
 
 
 class AuthorsListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     items: list[AuthorResponse]
     total: int
     limit: int

@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
-import pytest
 
+from src.application.dtos.main import PaginatedResult
 from src.dependencies.auth import get_current_admin, get_current_user
 from src.dependencies.services import get_book_service
 from src.interfaces.api.v1.book.main import router as book_router
@@ -93,12 +94,7 @@ def test_return_book_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> Non
 def test_get_books_list_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> None:
     client = TestClient(app)
     book = make_book_model(authors=[make_author_model()])
-    book_use_cases.get_books_list.return_value = {
-        "items": [book],
-        "total": 1,
-        "limit": 10,
-        "offset": 0,
-    }
+    book_use_cases.get_books_list.return_value = PaginatedResult(items=[book], total=1, limit=10, offset=0)
 
     response = client.get("/api/v1/books/?limit=10&offset=0")
 

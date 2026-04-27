@@ -2,10 +2,11 @@ from datetime import date
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI, HTTPException, status
 from fastapi.testclient import TestClient
-import pytest
 
+from src.application.dtos.main import PaginatedResult
 from src.dependencies.auth import get_current_admin, get_current_user
 from src.dependencies.services import get_author_service
 from src.interfaces.api.v1.author.main import router as author_router
@@ -61,12 +62,7 @@ def test_create_author_returns_201(app: FastAPI, author_use_cases: AsyncMock) ->
 def test_get_authors_list_returns_paginated_response(app: FastAPI, author_use_cases: AsyncMock) -> None:
     client = TestClient(app)
     author = make_author_model(books=[make_book_model()])
-    author_use_cases.get_authors_list.return_value = {
-        "items": [author],
-        "total": 1,
-        "limit": 10,
-        "offset": 0,
-    }
+    author_use_cases.get_authors_list.return_value = PaginatedResult(items=[author], total=1, limit=10, offset=0)
 
     response = client.get("/api/v1/authors/?limit=10&offset=0&name_query=tol")
 
