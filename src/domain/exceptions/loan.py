@@ -1,28 +1,52 @@
 """BookLoan Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainException
+from src.domain.exceptions.base import DomainError, status
 
 
-class LoanNotFound(DomainException):
+class LoanNotFoundError(DomainError):
     """Exception raised when book loan not found."""
-    pass
+    status_code = status.HTTP_404_NOT_FOUND
+    error_code = "LOAN_NOT_FOUND"
+    message = "The book loan record was not found"
 
-class LoanLimitExceeded(DomainException):
+
+class LoanLimitExceededError(DomainError):
     """Exception raised when book loan out of limit for user."""
-    pass
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    error_code = "LOAN_LIMIT_EXCEEDED"
+    message = "You have reached the maximum number of books allowed for loan"
 
-class NoAvailableInstances(DomainException):
+
+class NoAvailableInstancesError(DomainError):
     """Exception raised when book has no available instances."""
-    pass
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "NO_AVAILABLE_INSTANCES"
+    message = "All copies of this book are currently on loan"
 
-class AlreadyReturned(DomainException):
+
+class AlreadyReturnedError(DomainError):
     """Exception raised when instance of book already returned."""
-    pass
+    status_code = status.HTTP_400_BAD_REQUEST
+    error_code = "LOAN_ALREADY_RETURNED"
+    message = "This book has already been returned"
 
-class LoanOverdue(DomainException):
+
+class LoanOverdueError(DomainError):
     """Exception raised when loan is overdue for user."""
-    pass
+    status_code = status.HTTP_403_FORBIDDEN
+    error_code = "LOAN_OVERDUE"
+    message = "New loans are blocked due to overdue books"
 
-class ConcurrencyConflict(DomainException):
+
+class ConcurrencyConflictError(DomainError):
     """Exception raised when the copies of the book have run outid."""
-    pass
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "CONCURRENCY_CONFLICT"
+    message = "The book was just taken by another user. Please try again"
+
+
+class AlreadyBorrowingBookError(DomainError):
+    """User already has an unreturned loan for this book."""
+    status_code = status.HTTP_409_CONFLICT
+    error_code = "ALREADY_BORROWING_BOOK"
+    message = "You already have a copy of this book on loan"

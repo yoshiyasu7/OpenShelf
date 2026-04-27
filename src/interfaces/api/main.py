@@ -1,42 +1,41 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from src.infrastructure.database.provider import init_db_manager
+from src.infrastructure.logging.config import configure_logging
+from src.infrastructure.logging.middleware import (
+    RequestContextMiddleware,
+    exception_handler,
+)
 from src.infrastructure.settings.main import get_settings
-from src.infrastructure.database.database_manager import DatabaseManager
-from src.interfaces.api import dependencies
+from src.interfaces.api.health.main import router as health_router
+from src.interfaces.api.v1.main import api_v1_router
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """
     Application lifespan handler.
 
-    - On startup: initialize core infrastructure (database, queues, etc.).
+    - On startup: initialize core infrastructure.
     - On shutdown: gracefully release all external resources.
     """
     settings = get_settings()
 
-    # Initialize database manager once for the whole application lifetime.
-    db_manager = DatabaseManager(
-        database_url=settings.db.url,
-        debug=settings.db.debug,
-        pool_size=settings.db.pool_size,
-        max_overflow=settings.db.max_overflow,
-        pool_recycle=settings.db.pool_recycle,
-    )
+    db_manager = init_db_manager(settings)
     await db_manager.initialize()
 
-    # Expose the manager to dependency functions.
-    dependencies._db_manager = db_manager
+    yield
 
-    try:
-        yield
-    finally:
-        # Gracefully shut down infrastructure.
-        await db_manager.shutdown()
-        dependencies._db_manager = None
+    await db_manager.shutdown()
 
 
 def create_api_app() -> FastAPI:
@@ -47,6 +46,8 @@ def create_api_app() -> FastAPI:
     - easier testing (create independent app instances),
     - different configuration per environment (dev/stage/prod).
     """
+    configure_logging()
+
     settings = get_settings()
 
     app = FastAPI(
@@ -55,6 +56,12 @@ def create_api_app() -> FastAPI:
         debug=settings.api.debug,
         lifespan=lifespan,
     )
+
+    # Logging / request context middleware (request_id, user_id, etc.)
+    app.add_middleware(RequestContextMiddleware)
+
+    # Handle unexpected and custom errors
+    app.add_exception_handler(Exception, exception_handler)
 
     # Global middleware (CORS, logging, etc.).
     app.add_middleware(
@@ -65,7 +72,16 @@ def create_api_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register routers here, e.g.:
-    # app.include_router(api_router, prefix="/api")
+    app.include_router(health_router)
+    app.include_router(api_v1_router, prefix="/api")
+
+    # Project root is four levels above this file: src/interfaces/api/main.py
+    static_dir = Path(__file__).resolve().parent.parent.parent.parent / "static"
+    if static_dir.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=static_dir, html=True),
+            name="static",
+        )
 
     return app

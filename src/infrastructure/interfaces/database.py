@@ -1,10 +1,11 @@
 """Database interface."""
-
-import typing as t
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
-from sqlalchemy.ext.asyncio import AsyncSession
+if TYPE_CHECKING:
+    from contextlib import AbstractAsyncContextManager
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DatabaseInterface(ABC):
@@ -21,12 +22,11 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    @asynccontextmanager
-    async def get_session(self) -> t.AsyncGenerator[AsyncSession, None]:
+    def get_session(self) -> AbstractAsyncContextManager[AsyncSession]:
         """Get a database session context manager."""
         pass
 
     @abstractmethod
-    async def health_check(self) -> t.Dict[str, t.Any]:
+    async def health_check(self) -> dict[str, object]:
         """Check if the database is healthy and accessible."""
         pass

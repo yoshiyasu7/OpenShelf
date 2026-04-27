@@ -1,0 +1,48 @@
+# Version control
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+.cursor
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+*.egg
+.venv
+venv
+
+# Logs
+logs/
+*.log
+
+# Docker files
+Dockerfile
+.dockerignore
+deployment/docker-compose.yml
+
+# Environment secrets
+deployment/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist
+build
+
+# Tests
+tests/
+
+# Documentation
+*.md
+
+# Data
+*.db
+data/

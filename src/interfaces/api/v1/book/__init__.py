@@ -1,0 +1,1 @@
+"""Book endpoints (v1)."""

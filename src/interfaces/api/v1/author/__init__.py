@@ -1,0 +1,1 @@
+"""Author endpoints (v1)."""
