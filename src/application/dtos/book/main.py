@@ -80,3 +80,11 @@ class IssueBookResponse(BaseModel):
 class ReturnBookResponse(BaseModel):
     loan: BookLoanResponse
     available_instances: int
+
+
+class UserOpenLoanResponse(BaseModel):
+    loan_id: UUID
+    book_id: UUID
+    title: str
+    issued_at: datetime
+    due_date: date

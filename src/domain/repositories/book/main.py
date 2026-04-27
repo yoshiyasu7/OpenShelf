@@ -72,3 +72,7 @@ class BookRepository(ABC):
     @abstractmethod
     async def mark_loan_returned(self, *, loan_id: UUID) -> BookLoanModel | None:
         pass
+
+    @abstractmethod
+    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoanModel]:
+        pass

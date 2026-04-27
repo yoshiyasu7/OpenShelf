@@ -352,6 +352,7 @@
             id: out.loan.id,
             book_id: out.loan.book_id,
             title: b.title,
+            issued_at: out.loan.issued_at || null,
             due_date: out.loan.due_date,
           });
           msg("Книга оформлена.", true);

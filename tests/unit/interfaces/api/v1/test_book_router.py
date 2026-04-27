@@ -71,6 +71,7 @@ def test_issue_book_returns_201(app: FastAPI, book_use_cases: AsyncMock) -> None
     assert response.status_code == status.HTTP_201_CREATED
     payload = response.json()
     assert payload["loan"]["id"] == str(loan.id)
+    assert payload["loan"]["issued_at"] is not None
     assert payload["available_instances"] == 2
 
 
@@ -85,6 +86,7 @@ def test_return_book_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> Non
     assert response.status_code == status.HTTP_200_OK
     payload = response.json()
     assert payload["loan"]["id"] == str(loan.id)
+    assert payload["loan"]["issued_at"] is not None
     assert payload["available_instances"] == 4
 
 
@@ -135,3 +137,24 @@ def test_delete_book_returns_204(app: FastAPI, book_use_cases: AsyncMock) -> Non
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     book_use_cases.delete_book.assert_awaited_once()
+
+
+def test_get_my_open_loans_returns_200(app: FastAPI, book_use_cases: AsyncMock) -> None:
+    client = TestClient(app)
+    loan = make_book_loan_model()
+    book_use_cases.get_open_loans_for_user.return_value = [
+        {
+            "loan_id": loan.id,
+            "book_id": loan.book_id,
+            "title": "War and Peace",
+            "issued_at": loan.issued_at,
+            "due_date": loan.due_date,
+        }
+    ]
+
+    response = client.get("/api/v1/books/loans/me")
+
+    assert response.status_code == status.HTTP_200_OK
+    payload = response.json()
+    assert payload[0]["loan_id"] == str(loan.id)
+    assert payload[0]["title"] == "War and Peace"

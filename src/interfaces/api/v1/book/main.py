@@ -10,6 +10,7 @@ from src.application.dtos.book.main import (
     IssueBookResponse,
     ReturnBookResponse,
     UpdateBookRequest,
+    UserOpenLoanResponse,
 )
 from src.application.dtos.main import QueryFilterParamsDep  # noqa: TC001
 from src.dependencies import AdminUserDep, BookService, CurrentUserDep  # noqa: TC001
@@ -74,6 +75,15 @@ async def return_book(
         loan=BookLoanResponse.model_validate(loan),
         available_instances=available_instances,
     )
+
+
+@router.get("/loans/me", response_model=list[UserOpenLoanResponse])
+async def get_my_open_loans(
+    current_user: CurrentUserDep,
+    uc: BookService,
+) -> list[UserOpenLoanResponse]:
+    loans = await uc.get_open_loans_for_user(user_id=current_user.id)
+    return [UserOpenLoanResponse.model_validate(item) for item in loans]
 
 
 @router.patch("/{book_id}", response_model=BookResponse)

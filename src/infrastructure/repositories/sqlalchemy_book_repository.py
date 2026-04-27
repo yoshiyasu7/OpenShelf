@@ -145,6 +145,7 @@ class SQLAlchemyBookRepository(BookRepository):
         )
         self._session.add(loan)
         await self._session.flush()
+        await self._session.refresh(loan)
         return loan
 
     @override
@@ -169,3 +170,16 @@ class SQLAlchemyBookRepository(BookRepository):
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    @override
+    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoanModel]:
+        stmt = (
+            select(BookLoanModel)
+            .where(
+                BookLoanModel.user_id == user_id,
+                BookLoanModel.returned_at.is_(None),
+            )
+            .order_by(BookLoanModel.issued_at.desc())
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

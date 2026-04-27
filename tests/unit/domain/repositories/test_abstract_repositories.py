@@ -37,6 +37,7 @@ async def test_book_repository_abstract_methods_are_callable() -> None:
     assert await BookRepository.get_loan_by_id(object(), loan_id=uuid4()) is None
     assert await BookRepository.get_open_loan_by_id(object(), loan_id=uuid4()) is None
     assert await BookRepository.mark_loan_returned(object(), loan_id=uuid4()) is None
+    assert await BookRepository.list_open_loans_by_user(object(), user_id=uuid4()) is None
 
 
 @pytest.mark.asyncio

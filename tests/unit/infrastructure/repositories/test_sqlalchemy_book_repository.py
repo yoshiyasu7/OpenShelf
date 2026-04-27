@@ -194,6 +194,7 @@ async def test_create_loan_persists_and_returns_model(repository: SQLAlchemyBook
     assert loan.due_date == due_date
     session.add.assert_called_once_with(loan)
     session.flush.assert_awaited_once()
+    session.refresh.assert_awaited_once_with(loan)
 
 
 @pytest.mark.asyncio
@@ -230,3 +231,17 @@ async def test_mark_loan_returned_returns_updated_loan(repository: SQLAlchemyBoo
     updated = await repository.mark_loan_returned(loan_id=loan.id)
 
     assert updated == loan
+
+
+@pytest.mark.asyncio
+async def test_list_open_loans_by_user_returns_loans(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
+    user_id = uuid4()
+    first = make_book_loan_model(user_id=user_id)
+    second = make_book_loan_model(user_id=user_id)
+    result = Mock()
+    result.scalars.return_value.all.return_value = [first, second]
+    session.execute.return_value = result
+
+    loans = await repository.list_open_loans_by_user(user_id=user_id)
+
+    assert loans == [first, second]

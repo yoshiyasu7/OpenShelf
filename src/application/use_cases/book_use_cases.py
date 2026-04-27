@@ -157,6 +157,22 @@ class BookUseCases:
 
         return closed_loan, returned_book.available_instances
 
+    async def get_open_loans_for_user(self, *, user_id: UUID) -> list[dict[str, Any]]:
+        loans = await self._book_repository.list_open_loans_by_user(user_id=user_id)
+        items: list[dict[str, Any]] = []
+        for loan in loans:
+            book = await self._book_repository.get_by_id(book_id=loan.book_id)
+            items.append(
+                {
+                    "loan_id": loan.id,
+                    "book_id": loan.book_id,
+                    "title": book.title if book else "Книга",
+                    "issued_at": loan.issued_at,
+                    "due_date": loan.due_date,
+                }
+            )
+        return items
+
     def _validate_publication_date(self, *, publication_date: date) -> None:
         if publication_date > self._utc_today() or publication_date.year < MIN_PUBLICATION_YEAR:
             raise InvalidPublicationDateError()

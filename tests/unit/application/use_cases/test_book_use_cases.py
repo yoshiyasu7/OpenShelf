@@ -438,3 +438,22 @@ async def test_return_book_decrements_user_counter_when_possible(
     assert result_loan == loan
     assert available_instances == 5
     user_repo.update.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_open_loans_for_user_returns_payload(
+    use_cases: BookUseCases,
+    book_repo: AsyncMock,
+) -> None:
+    user_id = uuid4()
+    loan = make_book_loan_model(user_id=user_id)
+    book = make_book_model(book_id=loan.book_id, title="War and Peace")
+    book_repo.list_open_loans_by_user.return_value = [loan]
+    book_repo.get_by_id.return_value = book
+
+    result = await use_cases.get_open_loans_for_user(user_id=user_id)
+
+    assert len(result) == 1
+    assert result[0]["loan_id"] == loan.id
+    assert result[0]["book_id"] == loan.book_id
+    assert result[0]["title"] == "War and Peace"
