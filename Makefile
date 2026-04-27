@@ -8,6 +8,17 @@ run-dev:
 test:
 	PYTHONDONTWRITEBYTECODE=1 poetry run pytest
 
+docker-test:
+	@if [ ! -f deployment/.env ]; then \
+		echo "Error: deployment/.env not found."; \
+		echo "Create it manually from deployment/.env.example and set your values."; \
+		exit 1; \
+	fi
+	docker compose -f deployment/docker-compose.yml up --build
+
+docker-test-down:
+	docker compose -f deployment/docker-compose.yml down --remove-orphans
+
 
 # Check formatting
 .DEFAULT_GOAL := check

@@ -106,6 +106,7 @@
     localStorage.removeItem(K_ACCESS);
     localStorage.removeItem(K_REFRESH);
     localStorage.removeItem(K_USER);
+    localStorage.removeItem(K_LOANS);
   }
 
   function getLoans() {
@@ -128,6 +129,24 @@
 
   function removeLoanById(id) {
     setLoans(getLoans().filter((l) => l.id !== id));
+  }
+
+  async function syncLoansFromServer() {
+    const user = getUser();
+    if (!user) {
+      setLoans([]);
+      return [];
+    }
+    const items = await apiRequest("/books/loans/me");
+    const normalized = (items || []).map((item) => ({
+      id: item.loan_id,
+      book_id: item.book_id,
+      title: item.title,
+      issued_at: item.issued_at,
+      due_date: item.due_date,
+    }));
+    setLoans(normalized);
+    return normalized;
   }
 
   function parseHash() {
@@ -366,7 +385,7 @@
       });
       const span = document.createElement("span");
       span.className = "meta";
-      span.textContent = `Сдать до: ${myLoan.due_date}`;
+      span.textContent = `Сдать до: ${formatDisplayDate(myLoan.due_date)}`;
       actions.append(ret, span);
     }
 
@@ -458,7 +477,7 @@
     }
     const ul = el("loans-list");
     ul.innerHTML = "";
-    const loans = getLoans();
+    const loans = await syncLoansFromServer();
     if (!loans.length) {
       const li = document.createElement("li");
       li.textContent = "Сейчас нет взятых книг.";
@@ -467,12 +486,39 @@
     }
     for (const l of loans) {
       const li = document.createElement("li");
-      li.innerHTML = `<div class="card" style="box-shadow:none">
+      li.innerHTML = `<div class="card loan-card">
         <strong>${esc(l.title)}</strong>
-        <div class="meta">сдать до: ${l.due_date} · <a href="#book/${l.book_id}" data-nav>к книге</a></div>
+        <div class="meta loan-meta">Взята: ${esc(formatDisplayDate(l.issued_at))} · Сдать до: ${esc(formatDisplayDate(l.due_date))}</div>
+        <div class="loan-actions">
+          <a href="#book/${l.book_id}" class="btn btn-ghost" data-nav>Открыть книгу</a>
+          <button type="button" class="btn" data-loan-return="${esc(l.id)}">Вернуть</button>
+        </div>
       </div>`;
+      li.querySelector("[data-loan-return]")?.addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        const loanId = button?.getAttribute("data-loan-return");
+        if (!loanId) return;
+        button.disabled = true;
+        try {
+          await apiRequest(`/books/loans/${loanId}/return`, { method: "POST" });
+          removeLoanById(loanId);
+          msg("Книга возвращена.", true);
+          await loadProfile();
+        } catch (e) {
+          msg(String(e?.message || e), false);
+        } finally {
+          button.disabled = false;
+        }
+      });
       ul.append(li);
     }
+  }
+
+  function formatDisplayDate(value) {
+    if (!value) return "—";
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return String(value);
+    return dt.toLocaleDateString("ru-RU");
   }
 
   function esc(s) {
@@ -640,7 +686,6 @@
       location.replace("#books");
       return;
     }
-
     if (view === "login") {
       showView("login");
       return;
@@ -743,6 +788,7 @@
     try {
       const data = await apiRequest("/auth/login", { method: "POST", body: JSON.stringify(payload) });
       setSession(data.access_token, data.refresh_token, data.user);
+      await syncLoansFromServer();
       msg("Вход выполнен.", true);
       location.hash = "books";
     } catch (err) {

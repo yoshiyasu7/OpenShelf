@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 _db_manager: DatabaseManager | None = None
 
+
 def init_db_manager(settings: Settings) -> DatabaseManager:
     global _db_manager
     _db_manager = DatabaseManager(
@@ -17,6 +18,7 @@ def init_db_manager(settings: Settings) -> DatabaseManager:
         pool_recycle=settings.db.pool_recycle,
     )
     return _db_manager
+
 
 def get_db_manager() -> DatabaseManager:
     if _db_manager is None:

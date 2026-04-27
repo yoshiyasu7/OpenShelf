@@ -228,6 +228,11 @@ textarea:focus {
   margin: 0;
 }
 
+.toolbar > .h2 {
+  margin: 0;
+  align-self: center;
+}
+
 @media (min-width: 560px) {
   .toolbar {
     flex-direction: row;
@@ -365,4 +370,20 @@ textarea:focus {
 
 .authors-readonly {
   cursor: help;
+}
+
+.loan-card {
+  box-shadow: none;
+}
+
+.loan-meta {
+  margin-top: 0.35rem;
+}
+
+.loan-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }

@@ -16,6 +16,15 @@ def _json_serializer(obj: object) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
+def _pool_metric(pool: object, method_name: str) -> int | None:
+    """Read pool metric if the pool implementation exposes it."""
+    method = getattr(pool, method_name, None)
+    if not callable(method):
+        return None
+    value = method()
+    return value if isinstance(value, int) else None
+
+
 class DatabaseManager(DatabaseInterface):
     """PostgreSQL database manager."""
 
@@ -96,11 +105,11 @@ class DatabaseManager(DatabaseInterface):
 
         pool = self._engine.pool
         pool_state: dict[str, object] = {
-            "pool_size": pool.size(),  # pyright: ignore[reportAttributeAccessIssue]
-            "checked_in": pool.checkedin(),  # pyright: ignore[reportAttributeAccessIssue]
-            "checked_out": pool.checkedout(),  # pyright: ignore[reportAttributeAccessIssue]
-            "overflow": pool.overflow(),  # pyright: ignore[reportAttributeAccessIssue]
-            "invalid": pool.invalid(),  # pyright: ignore[reportAttributeAccessIssue]
+            "pool_size": _pool_metric(pool, "size"),
+            "checked_in": _pool_metric(pool, "checkedin"),
+            "checked_out": _pool_metric(pool, "checkedout"),
+            "overflow": _pool_metric(pool, "overflow"),
+            "invalid": _pool_metric(pool, "invalid"),
         }
 
         if self._session_factory is None:

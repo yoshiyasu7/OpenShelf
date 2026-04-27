@@ -117,6 +117,36 @@ async def test_health_check_with_engine_and_without_engine() -> None:
     }
 
 
+@pytest.mark.asyncio
+async def test_health_check_handles_missing_pool_metrics() -> None:
+    manager = DatabaseManager("postgresql+asyncpg://user:pass@localhost/db")
+    pool = Mock(spec=["size", "checkedin", "checkedout", "overflow"])
+    pool.size.return_value = 1
+    pool.checkedin.return_value = 2
+    pool.checkedout.return_value = 3
+    pool.overflow.return_value = 4
+    manager._engine = Mock(pool=pool)
+
+    session = AsyncMock()
+
+    @asynccontextmanager
+    async def fake_session_cm():
+        yield session
+
+    manager._session_factory = fake_session_cm
+    health = await manager.health_check()
+
+    assert health == {
+        "status": "up",
+        "available": True,
+        "pool_size": 1,
+        "checked_in": 2,
+        "checked_out": 3,
+        "overflow": 4,
+        "invalid": None,
+    }
+
+
 def test_repr_contains_database_url() -> None:
     manager = DatabaseManager("postgresql+asyncpg://user:pass@localhost/db")
     assert "postgresql+asyncpg://user:pass@localhost/db" in repr(manager)

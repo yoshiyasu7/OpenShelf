@@ -1,0 +1,57 @@
+name: openshelf
+
+services:
+  app:
+    container_name: openshelf-app
+    image: openshelf:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        PYTHON_VERSION: "3.14.0"
+        PYTHON_IMAGE_VARIANT: "${PYTHON_IMAGE_VARIANT:-slim-bookworm}"
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT_OUTSIDE:-8000}:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - openshelf-net
+
+  database:
+    container_name: openshelf-db
+    image: postgres:17.6
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME:-openshelf}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "${DB_PORT_OUTSIDE:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    networks:
+      - openshelf-net
+
+volumes:
+  postgres_data:
+  app_logs:
+
+networks:
+  openshelf-net:
+    driver: bridge

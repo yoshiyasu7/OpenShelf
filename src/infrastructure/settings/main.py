@@ -16,18 +16,12 @@ def _get_required_env(name: str) -> str:
 
 @dataclass
 class APPSettings:
-    app_env: str = field(
-        default_factory=lambda: os.getenv("APP_ENV", "dev").lower()
-    )
-    log_level: str = field(
-        default_factory=lambda: os.getenv("LOG_LEVEL", "DEBUG").upper()
-    )
+    app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "dev").lower())
+    log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "DEBUG").upper())
     # None means: use per-environment default (dev=True, prod/test=False).
     log_to_file: bool | None = field(
         default_factory=lambda: (
-            None
-            if os.getenv("LOG_TO_FILE") is None
-            else os.getenv("LOG_TO_FILE", "").lower() == "true"
+            None if os.getenv("LOG_TO_FILE") is None else os.getenv("LOG_TO_FILE", "").lower() == "true"
         )
     )
 
@@ -36,33 +30,19 @@ class APPSettings:
 class APISettings:
     """API server settings."""
 
-    title: str = field(
-        default_factory=lambda: os.getenv("API_TITLE", "OpenShelf API")
-    )
-    version: str = field(
-        default_factory=lambda: os.getenv("API_VERSION", "1.0.0")
-    )
-    debug: bool = field(
-        default_factory=lambda: os.getenv("API_DEBUG", "False").lower() == "true"
-    )
-    host: str = field(
-        default_factory=lambda: os.getenv("API_HOST", "0.0.0.0")
-    )
-    port: int = field(
-        default_factory=lambda: int(os.getenv("API_PORT", "8000"))
-    )
+    title: str = field(default_factory=lambda: os.getenv("API_TITLE", "OpenShelf API"))
+    version: str = field(default_factory=lambda: os.getenv("API_VERSION", "1.0.0"))
+    debug: bool = field(default_factory=lambda: os.getenv("API_DEBUG", "False").lower() == "true")
+    host: str = field(default_factory=lambda: os.getenv("API_HOST", "0.0.0.0"))
+    port: int = field(default_factory=lambda: int(os.getenv("API_PORT", "8000")))
 
 
 @dataclass
 class JWTSettings:
     """JWT authentication settings."""
 
-    secret_key: str = field(
-        default_factory=lambda: _get_required_env("JWT_SECRET_KEY")
-    )
-    algorithm: str = field(
-        default_factory=lambda: _get_required_env("JWT_ALGORITHM")
-    )
+    secret_key: str = field(default_factory=lambda: _get_required_env("JWT_SECRET_KEY"))
+    algorithm: str = field(default_factory=lambda: _get_required_env("JWT_ALGORITHM"))
     access_token_expire_minutes: int = field(
         default_factory=lambda: int(_get_required_env("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"))
     )
@@ -75,24 +55,12 @@ class JWTSettings:
 class DatabaseSettings:
     """Database connection settings."""
 
-    debug: bool = field(
-        default_factory=lambda: os.getenv("DB_DEBUG", "False").lower() == "true"
-    )
-    url: str = field(
-        default_factory=lambda: _get_required_env("DB_URL")
-    )
-    pool_size: int = field(
-        default_factory=lambda: int(os.getenv("DB_POOL_SIZE", "10"))
-    )
-    max_overflow: int = field(
-        default_factory=lambda: int(os.getenv("DB_MAX_OVERFLOW", "20"))
-    )
-    pool_timeout: int = field(
-        default_factory=lambda: int(os.getenv("DB_POOL_TIMEOUT", "30"))
-    )
-    pool_recycle: int = field(
-        default_factory=lambda: int(os.getenv("DB_POOL_RECYCLE", "3600"))
-    )
+    debug: bool = field(default_factory=lambda: os.getenv("DB_DEBUG", "False").lower() == "true")
+    url: str = field(default_factory=lambda: _get_required_env("DB_URL"))
+    pool_size: int = field(default_factory=lambda: int(os.getenv("DB_POOL_SIZE", "10")))
+    max_overflow: int = field(default_factory=lambda: int(os.getenv("DB_MAX_OVERFLOW", "20")))
+    pool_timeout: int = field(default_factory=lambda: int(os.getenv("DB_POOL_TIMEOUT", "30")))
+    pool_recycle: int = field(default_factory=lambda: int(os.getenv("DB_POOL_RECYCLE", "3600")))
 
 
 @dataclass

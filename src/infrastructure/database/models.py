@@ -31,7 +31,7 @@ class Base(DeclarativeBase):
 authors_books = Table(
     "authors_books",
     Base.metadata,
-    Column("book_id", PUUID, ForeignKey("books.id", ondelete='CASCADE'), primary_key=True, index=True),
+    Column("book_id", PUUID, ForeignKey("books.id", ondelete="CASCADE"), primary_key=True, index=True),
     Column("author_id", PUUID, ForeignKey("authors.id"), primary_key=True, index=True),
 )
 
@@ -39,7 +39,7 @@ authors_books = Table(
 class UserModel(Base):
     """SQLAlchemy model for User entity."""
 
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
@@ -48,15 +48,13 @@ class UserModel(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     books_on_hand: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(tz=UTC),
-        nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(tz=UTC), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(tz=UTC),
         onupdate=lambda: datetime.now(tz=UTC),
-        nullable=False
+        nullable=False,
     )
 
 
@@ -92,7 +90,7 @@ class RefreshSessionModel(Base):
 class AuthorModel(Base):
     """SQLAlchemy model for Author entity."""
 
-    __tablename__ = 'authors'
+    __tablename__ = "authors"
 
     id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -104,15 +102,13 @@ class AuthorModel(Base):
         lazy="selectin",
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(tz=UTC),
-        nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(tz=UTC), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(tz=UTC),
         onupdate=lambda: datetime.now(tz=UTC),
-        nullable=False
+        nullable=False,
     )
 
     __table_args__ = (
@@ -126,7 +122,7 @@ class AuthorModel(Base):
 class BookModel(Base):
     """SQLAlchemy model for Book entity."""
 
-    __tablename__ = 'books'
+    __tablename__ = "books"
 
     id: Mapped[UUID] = mapped_column(PUUID, primary_key=True, default=uuid4)
     title: Mapped[str] = mapped_column(String, unique=True, index=True)
@@ -140,15 +136,13 @@ class BookModel(Base):
     genres: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     available_instances: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(tz=UTC),
-        nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(tz=UTC), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(tz=UTC),
         onupdate=lambda: datetime.now(tz=UTC),
-        nullable=False
+        nullable=False,
     )
 
     __table_args__ = (
@@ -192,15 +186,13 @@ class BookLoanModel(Base):
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(tz=UTC),
-        nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(tz=UTC), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(tz=UTC),
         onupdate=lambda: datetime.now(tz=UTC),
-        nullable=False
+        nullable=False,
     )
 
     user: Mapped["UserModel"] = relationship(lazy="selectin")
