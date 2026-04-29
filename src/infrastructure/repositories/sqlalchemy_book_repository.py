@@ -1,8 +1,11 @@
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, NoReturn, override
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 
+from src.domain.exceptions.book import BookAlreadyExistsError
 from src.domain.repositories.book.main import BookRepository
 from src.infrastructure.database.mappers import book_loan_to_entity, book_to_entity
 from src.infrastructure.database.models import AuthorModel, BookLoanModel, BookModel
@@ -26,9 +29,9 @@ class SQLAlchemyBookRepository(BookRepository):
 
     @override
     async def get_by_id(self, *, book_id: UUID) -> Book | None:
-        stmt = select(BookModel).where(BookModel.id == book_id)
+        stmt = select(BookModel).options(joinedload(BookModel.authors)).where(BookModel.id == book_id)
         result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
+        model = result.unique().scalar_one_or_none()
         return book_to_entity(model) if model is not None else None
 
     @override
@@ -43,16 +46,22 @@ class SQLAlchemyBookRepository(BookRepository):
 
     @override
     async def create(self, *, data: dict[str, Any]) -> Book:
-        author_ids = data.pop("author_ids", None)
+        create_data = dict(data)
+        author_ids = create_data.pop("author_ids", None)
 
-        book = BookModel(**data)
+        book = BookModel(**create_data)
         if author_ids:
             authors_stmt = select(AuthorModel).where(AuthorModel.id.in_(author_ids))
             authors_result = await self._session.execute(authors_stmt)
             book.authors = list(authors_result.scalars().all())
+        else:
+            book.authors = []
 
         self._session.add(book)
-        await self._session.flush()
+        try:
+            await self._session.flush()
+        except IntegrityError as exc:
+            self._translate_unique_violation(exc)
         return book_to_entity(book)
 
     @override
@@ -65,6 +74,7 @@ class SQLAlchemyBookRepository(BookRepository):
     ) -> tuple[list[Book], int]:
         stmt = (
             select(BookModel, func.count().over().label("total_count"))
+            .options(selectinload(BookModel.authors))
             .order_by(BookModel.title.asc(), BookModel.id.asc())
             .limit(limit)
             .offset(offset)
@@ -76,7 +86,7 @@ class SQLAlchemyBookRepository(BookRepository):
         result = await self._session.execute(stmt)
         rows = result.all()
         if not rows:
-            return [], 0
+            return [], await self._count(name_query=name_query) if offset > 0 else 0
 
         books = [book_to_entity(row[0]) for row in rows]
         total_count = int(rows[0][1])
@@ -85,9 +95,14 @@ class SQLAlchemyBookRepository(BookRepository):
     @override
     async def update(self, *, book_id: UUID, data: dict[str, Any]) -> Book | None:
         stmt = update(BookModel).where(BookModel.id == book_id).values(**data).returning(BookModel)
-        result = await self._session.execute(stmt)
+        try:
+            result = await self._session.execute(stmt)
+        except IntegrityError as exc:
+            self._translate_unique_violation(exc)
         model = result.scalar_one_or_none()
-        return book_to_entity(model) if model is not None else None
+        if model is None:
+            return None
+        return await self.get_by_id(book_id=book_id)
 
     @override
     async def delete(self, *, book_id: UUID) -> bool:
@@ -134,7 +149,7 @@ class SQLAlchemyBookRepository(BookRepository):
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        return book_to_entity(model) if model is not None else None
+        return book_to_entity(model, include_authors=False) if model is not None else None
 
     @override
     async def return_instance(self, *, book_id: UUID) -> Book | None:
@@ -146,7 +161,7 @@ class SQLAlchemyBookRepository(BookRepository):
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        return book_to_entity(model) if model is not None else None
+        return book_to_entity(model, include_authors=False) if model is not None else None
 
     @override
     async def create_loan(self, *, user_id: UUID, book_id: UUID, due_date: date) -> BookLoan:
@@ -157,19 +172,11 @@ class SQLAlchemyBookRepository(BookRepository):
         )
         self._session.add(loan)
         await self._session.flush()
-        await self._session.refresh(loan)
         return book_loan_to_entity(loan)
 
     @override
     async def get_loan_by_id(self, *, loan_id: UUID) -> BookLoan | None:
         stmt = select(BookLoanModel).where(BookLoanModel.id == loan_id)
-        result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return book_loan_to_entity(model) if model is not None else None
-
-    @override
-    async def get_open_loan_by_id(self, *, loan_id: UUID) -> BookLoan | None:
-        stmt = select(BookLoanModel).where(BookLoanModel.id == loan_id, BookLoanModel.returned_at.is_(None))
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return book_loan_to_entity(model) if model is not None else None
@@ -187,11 +194,27 @@ class SQLAlchemyBookRepository(BookRepository):
         return book_loan_to_entity(model) if model is not None else None
 
     @override
-    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoan]:
+    async def list_open_loans_with_book_titles(self, *, user_id: UUID) -> list[tuple[BookLoan, str | None]]:
         stmt = (
-            select(BookLoanModel)
+            select(BookLoanModel, BookModel.title)
+            .outerjoin(BookModel, BookLoanModel.book_id == BookModel.id)
             .where(BookLoanModel.user_id == user_id, BookLoanModel.returned_at.is_(None))
             .order_by(BookLoanModel.issued_at.desc())
         )
         result = await self._session.execute(stmt)
-        return [book_loan_to_entity(model) for model in result.scalars().all()]
+        return [(book_loan_to_entity(loan), title) for loan, title in result.all()]
+
+    async def _count(self, *, name_query: str | None) -> int:
+        stmt = select(func.count(BookModel.id))
+        if name_query:
+            normalized_query = name_query.strip()
+            stmt = stmt.where(BookModel.title.ilike(f"%{normalized_query}%"))
+        result = await self._session.execute(stmt)
+        return int(result.scalar_one())
+
+    @staticmethod
+    def _translate_unique_violation(exc: IntegrityError) -> NoReturn:
+        message = str(exc.orig).lower() if exc.orig is not None else ""
+        if "ix_books_title" in message or "books_title_key" in message or "ux_books_title_lower" in message:
+            raise BookAlreadyExistsError() from exc
+        raise exc

@@ -30,17 +30,6 @@ async def test_create_adds_and_flushes(repository: SQLAlchemySessionRepository, 
 
 
 @pytest.mark.asyncio
-async def test_is_active_returns_boolean(repository: SQLAlchemySessionRepository, session: AsyncMock) -> None:
-    result = Mock()
-    result.scalar_one_or_none.return_value = uuid4()
-    session.execute.return_value = result
-
-    is_active = await repository.is_active(token_hash="hash", now=datetime.now(UTC))
-
-    assert is_active is True
-
-
-@pytest.mark.asyncio
 async def test_revoke_executes_update(repository: SQLAlchemySessionRepository, session: AsyncMock) -> None:
     await repository.revoke(token_hash="hash", now=datetime.now(UTC))
 

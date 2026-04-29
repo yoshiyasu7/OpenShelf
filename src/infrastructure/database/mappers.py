@@ -4,7 +4,9 @@ These functions isolate the SQLAlchemy layer from the rest of the application:
 repositories return pure domain entities, so use cases never see ORM models.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
+
+from sqlalchemy import inspect
 
 from src.domain.entities import Author, Book, BookLoan, RefreshSession, User
 
@@ -16,6 +18,15 @@ if TYPE_CHECKING:
         RefreshSessionModel,
         UserModel,
     )
+
+
+def _loaded_relationship(model: object, name: str) -> list[Any]:
+    """Return an already-loaded relationship without triggering lazy IO."""
+    state = cast("Any", inspect(model))
+    if name in state.unloaded:
+        msg = f"{type(model).__name__}.{name} must be eagerly loaded before mapping"
+        raise RuntimeError(msg)
+    return list(getattr(model, name) or [])
 
 
 def user_to_entity(model: UserModel) -> User:
@@ -39,7 +50,11 @@ def author_to_entity(model: AuthorModel, *, include_books: bool = True) -> Autho
         birthday=model.birthday,
         created_at=model.created_at,
         updated_at=model.updated_at,
-        books=([book_to_entity(book, include_authors=False) for book in (model.books or [])] if include_books else []),
+        books=(
+            [book_to_entity(book, include_authors=False) for book in _loaded_relationship(model, "books")]
+            if include_books
+            else []
+        ),
     )
 
 
@@ -54,7 +69,7 @@ def book_to_entity(model: BookModel, *, include_authors: bool = True) -> Book:
         created_at=model.created_at,
         updated_at=model.updated_at,
         authors=(
-            [author_to_entity(author, include_books=False) for author in (model.authors or [])]
+            [author_to_entity(author, include_books=False) for author in _loaded_relationship(model, "authors")]
             if include_authors
             else []
         ),

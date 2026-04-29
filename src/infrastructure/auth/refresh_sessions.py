@@ -35,9 +35,6 @@ class RefreshSessionStore:
             expires_at=expires_at,
         )
 
-    async def is_active(self, *, token_hash: str, now: datetime) -> bool:
-        return await self._repository.is_active(token_hash=token_hash, now=now)
-
     async def revoke(self, *, refresh_token: str, now: datetime) -> None:
         token_hash = self.hash_token(refresh_token)
         await self._repository.revoke(token_hash=token_hash, now=now)
@@ -59,9 +56,6 @@ class RefreshSessionStore:
         - new token hash is inserted
         """
         old_hash = self.hash_token(old_refresh_token)
-
-        if not await self.is_active(token_hash=old_hash, now=now):
-            raise ValueError("Refresh token is not active.")
 
         updated = await self._repository.revoke_for_user(
             user_id=user_id,

@@ -83,7 +83,7 @@ class AuthUseCases:
     async def logout(self, *, refresh_token: str) -> None:
         try:
             self._token_service.verify_refresh_token(refresh_token)
-        except TokenDecodeError, TokenValidationError:
+        except (TokenDecodeError, TokenValidationError):
             # Idempotent: invalid/expired token -> no-op.
             return
 

@@ -120,12 +120,46 @@ async def test_update_returns_entity(repository: SQLAlchemyUserRepository, sessi
 
 
 @pytest.mark.asyncio
+async def test_increment_books_on_hand_returns_updated_user(
+    repository: SQLAlchemyUserRepository,
+    session: AsyncMock,
+) -> None:
+    user = make_user_model()
+    user.books_on_hand = 2
+    result = Mock()
+    result.scalar_one_or_none.return_value = user
+    session.execute.return_value = result
+
+    updated = await repository.increment_books_on_hand(user_id=user.id, max_books_on_hand=5)
+
+    assert updated is not None
+    assert updated.books_on_hand == 2
+
+
+@pytest.mark.asyncio
+async def test_decrement_books_on_hand_returns_updated_user(
+    repository: SQLAlchemyUserRepository,
+    session: AsyncMock,
+) -> None:
+    user = make_user_model()
+    user.books_on_hand = 1
+    result = Mock()
+    result.scalar_one_or_none.return_value = user
+    session.execute.return_value = result
+
+    updated = await repository.decrement_books_on_hand(user_id=user.id)
+
+    assert updated is not None
+    assert updated.books_on_hand == 1
+
+
+@pytest.mark.asyncio
 async def test_delete_returns_false_when_not_deleted(
     repository: SQLAlchemyUserRepository,
     session: AsyncMock,
 ) -> None:
     result = Mock()
-    result.fetchone.return_value = None
+    result.scalar_one_or_none.return_value = None
     session.execute.return_value = result
 
     deleted = await repository.delete(user_id=uuid4())
