@@ -38,5 +38,13 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    async def increment_books_on_hand(self, *, user_id: UUID, max_books_on_hand: int) -> User | None:
+        pass
+
+    @abstractmethod
+    async def decrement_books_on_hand(self, *, user_id: UUID) -> User | None:
+        pass
+
+    @abstractmethod
     async def delete(self, *, user_id: UUID) -> bool:
         pass

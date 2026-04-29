@@ -86,10 +86,34 @@ class SQLAlchemyUserRepository(UserRepository):
         return user_to_entity(model) if model is not None else None
 
     @override
+    async def increment_books_on_hand(self, *, user_id: UUID, max_books_on_hand: int) -> User | None:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id, UserModel.books_on_hand < max_books_on_hand)
+            .values(books_on_hand=UserModel.books_on_hand + 1)
+            .returning(UserModel)
+        )
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return user_to_entity(model) if model is not None else None
+
+    @override
+    async def decrement_books_on_hand(self, *, user_id: UUID) -> User | None:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id, UserModel.books_on_hand > 0)
+            .values(books_on_hand=UserModel.books_on_hand - 1)
+            .returning(UserModel)
+        )
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return user_to_entity(model) if model is not None else None
+
+    @override
     async def delete(self, *, user_id: UUID) -> bool:
         stmt = delete(UserModel).where(UserModel.id == user_id).returning(UserModel.id)
         result = await self._session.execute(stmt)
-        deleted_id = result.fetchone()
+        deleted_id = result.scalar_one_or_none()
         return deleted_id is not None
 
     @staticmethod

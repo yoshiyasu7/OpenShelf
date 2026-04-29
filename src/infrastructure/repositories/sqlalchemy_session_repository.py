@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, override
 
-from sqlalchemy import select, update
+from sqlalchemy import update
 
 from src.domain.repositories.session.main import SessionRepository
 from src.infrastructure.database.models import RefreshSessionModel
@@ -35,16 +35,6 @@ class SQLAlchemySessionRepository(SessionRepository):
         await self._session.flush()
 
     @override
-    async def is_active(self, *, token_hash: str, now: datetime) -> bool:
-        stmt = select(RefreshSessionModel.id).where(
-            RefreshSessionModel.token_hash == token_hash,
-            RefreshSessionModel.revoked_at.is_(None),
-            RefreshSessionModel.expires_at > now,
-        )
-        res = await self._session.execute(stmt)
-        return res.scalar_one_or_none() is not None
-
-    @override
     async def revoke(self, *, token_hash: str, now: datetime) -> None:
         stmt = (
             update(RefreshSessionModel)
@@ -64,6 +54,7 @@ class SQLAlchemySessionRepository(SessionRepository):
                 RefreshSessionModel.token_hash == token_hash,
                 RefreshSessionModel.user_id == user_id,
                 RefreshSessionModel.revoked_at.is_(None),
+                RefreshSessionModel.expires_at > now,
             )
             .values(revoked_at=now)
             .returning(RefreshSessionModel.id)

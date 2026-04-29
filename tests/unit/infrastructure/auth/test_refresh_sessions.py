@@ -40,17 +40,6 @@ async def test_create_hashes_token_before_store(store: RefreshSessionStore, repo
 
 
 @pytest.mark.asyncio
-async def test_is_active_proxies_repository(store: RefreshSessionStore, repository: AsyncMock) -> None:
-    repository.is_active.return_value = True
-    now = datetime.now(UTC)
-
-    result = await store.is_active(token_hash="hash", now=now)
-
-    assert result is True
-    repository.is_active.assert_awaited_once_with(token_hash="hash", now=now)
-
-
-@pytest.mark.asyncio
 async def test_revoke_hashes_token(store: RefreshSessionStore, repository: AsyncMock) -> None:
     now = datetime.now(UTC)
     await store.revoke(refresh_token="plain-token", now=now)
@@ -62,7 +51,7 @@ async def test_revoke_hashes_token(store: RefreshSessionStore, repository: Async
 
 @pytest.mark.asyncio
 async def test_rotate_raises_when_old_token_not_active(store: RefreshSessionStore, repository: AsyncMock) -> None:
-    repository.is_active.return_value = False
+    repository.revoke_for_user.return_value = False
 
     with pytest.raises(ValueError):
         await store.rotate(
@@ -76,7 +65,6 @@ async def test_rotate_raises_when_old_token_not_active(store: RefreshSessionStor
 
 @pytest.mark.asyncio
 async def test_rotate_raises_when_revoke_not_updated(store: RefreshSessionStore, repository: AsyncMock) -> None:
-    repository.is_active.return_value = True
     repository.revoke_for_user.return_value = False
 
     with pytest.raises(ValueError):
@@ -91,7 +79,6 @@ async def test_rotate_raises_when_revoke_not_updated(store: RefreshSessionStore,
 
 @pytest.mark.asyncio
 async def test_rotate_revokes_old_and_creates_new(store: RefreshSessionStore, repository: AsyncMock) -> None:
-    repository.is_active.return_value = True
     repository.revoke_for_user.return_value = True
     expires = datetime.now(UTC) + timedelta(days=1)
     user_id = uuid4()

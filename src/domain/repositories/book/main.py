@@ -66,13 +66,9 @@ class BookRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_open_loan_by_id(self, *, loan_id: UUID) -> BookLoan | None:
-        pass
-
-    @abstractmethod
     async def mark_loan_returned(self, *, loan_id: UUID) -> BookLoan | None:
         pass
 
     @abstractmethod
-    async def list_open_loans_by_user(self, *, user_id: UUID) -> list[BookLoan]:
+    async def list_open_loans_with_book_titles(self, *, user_id: UUID) -> list[tuple[BookLoan, str | None]]:
         pass

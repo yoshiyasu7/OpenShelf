@@ -126,12 +126,14 @@ async def test_issue_book_raises_when_user_limit_exceeded(
     user.books_on_hand = 5
 
     book_repo.has_overdue_loans.return_value = False
+    book_repo.has_open_loan_for_book.return_value = False
+    user_repo.increment_books_on_hand.return_value = None
     user_repo.get_by_id.return_value = user
 
     with pytest.raises(LoanLimitExceededError):
         await use_cases.issue_book(user_id=user_id, book_id=book_id)
 
-    book_repo.has_open_loan_for_book.assert_not_awaited()
+    book_repo.take_available_instance.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -152,6 +154,7 @@ async def test_issue_book_raises_when_already_borrowing_same_book(
         await use_cases.issue_book(user_id=user_id, book_id=book_id)
 
     book_repo.has_open_loan_for_book.assert_awaited_once_with(user_id=user_id, book_id=book_id)
+    user_repo.increment_books_on_hand.assert_not_awaited()
     book_repo.take_available_instance.assert_not_awaited()
 
 
@@ -168,7 +171,7 @@ async def test_issue_book_raises_when_no_available_instances(
     book = make_book_model(book_id=book_id, available_instances=0)
 
     book_repo.has_overdue_loans.return_value = False
-    user_repo.get_by_id.return_value = user
+    user_repo.increment_books_on_hand.return_value = user
     book_repo.take_available_instance.return_value = None
     book_repo.get_by_id.return_value = book
 
@@ -190,15 +193,15 @@ async def test_issue_book_returns_loan_and_available_instances(
     loan = make_book_loan_model(user_id=user_id, book_id=book_id)
 
     book_repo.has_overdue_loans.return_value = False
-    user_repo.get_by_id.return_value = user
+    user_repo.increment_books_on_hand.return_value = user
     book_repo.take_available_instance.return_value = reserved_book
-    user_repo.update.return_value = AsyncMock()
     book_repo.create_loan.return_value = loan
 
     returned_loan, available_instances = await use_cases.issue_book(user_id=user_id, book_id=book_id)
 
     assert returned_loan == loan
     assert available_instances == 3
+    user_repo.increment_books_on_hand.assert_awaited_once_with(user_id=user_id, max_books_on_hand=5)
 
 
 @pytest.mark.asyncio
@@ -328,6 +331,8 @@ async def test_issue_book_raises_when_user_missing(
     user_repo: AsyncMock,
 ) -> None:
     book_repo.has_overdue_loans.return_value = False
+    book_repo.has_open_loan_for_book.return_value = False
+    user_repo.increment_books_on_hand.return_value = None
     user_repo.get_by_id.return_value = None
 
     with pytest.raises(UserNotFoundError):
@@ -343,7 +348,7 @@ async def test_issue_book_raises_when_book_missing_after_reservation(
     user = AsyncMock()
     user.books_on_hand = 0
     book_repo.has_overdue_loans.return_value = False
-    user_repo.get_by_id.return_value = user
+    user_repo.increment_books_on_hand.return_value = user
     book_repo.take_available_instance.return_value = None
     book_repo.get_by_id.return_value = None
 
@@ -361,7 +366,7 @@ async def test_issue_book_raises_on_concurrency_conflict(
     user.books_on_hand = 0
     found_book = make_book_model(available_instances=2)
     book_repo.has_overdue_loans.return_value = False
-    user_repo.get_by_id.return_value = user
+    user_repo.increment_books_on_hand.return_value = user
     book_repo.take_available_instance.return_value = None
     book_repo.get_by_id.return_value = found_book
 
@@ -381,9 +386,9 @@ async def test_issue_book_raises_when_user_disappears_during_update(
     user.books_on_hand = 2
     reserved_book = make_book_model(book_id=book_id, available_instances=1)
     book_repo.has_overdue_loans.return_value = False
-    user_repo.get_by_id.return_value = user
+    user_repo.increment_books_on_hand.return_value = None
+    user_repo.get_by_id.return_value = None
     book_repo.take_available_instance.return_value = reserved_book
-    user_repo.update.return_value = None
 
     with pytest.raises(UserNotFoundError):
         await use_cases.issue_book(user_id=user_id, book_id=book_id)
@@ -408,7 +413,9 @@ async def test_return_book_raises_on_closed_loan_update_conflict(use_cases: Book
 
 
 @pytest.mark.asyncio
-async def test_return_book_raises_when_book_missing_after_closing_loan(use_cases: BookUseCases, book_repo: AsyncMock) -> None:
+async def test_return_book_raises_when_book_missing_after_closing_loan(
+    use_cases: BookUseCases, book_repo: AsyncMock
+) -> None:
     loan = make_book_loan_model()
     book_repo.get_loan_by_id.return_value = loan
     book_repo.mark_loan_returned.return_value = loan
@@ -431,13 +438,13 @@ async def test_return_book_decrements_user_counter_when_possible(
     book_repo.get_loan_by_id.return_value = loan
     book_repo.mark_loan_returned.return_value = loan
     book_repo.return_instance.return_value = returned_book
-    user_repo.get_by_id.return_value = borrower
+    user_repo.decrement_books_on_hand.return_value = borrower
 
     result_loan, available_instances = await use_cases.return_book(loan_id=loan.id)
 
     assert result_loan == loan
     assert available_instances == 5
-    user_repo.update.assert_awaited_once()
+    user_repo.decrement_books_on_hand.assert_awaited_once_with(user_id=loan.user_id)
 
 
 @pytest.mark.asyncio
@@ -447,9 +454,7 @@ async def test_get_open_loans_for_user_returns_loans_with_titles(
 ) -> None:
     user_id = uuid4()
     loan = make_book_loan_model(user_id=user_id)
-    book = make_book_model(book_id=loan.book_id, title="War and Peace")
-    book_repo.list_open_loans_by_user.return_value = [loan]
-    book_repo.get_by_id.return_value = book
+    book_repo.list_open_loans_with_book_titles.return_value = [(loan, "War and Peace")]
 
     result = await use_cases.get_open_loans_for_user(user_id=user_id)
 
@@ -457,3 +462,4 @@ async def test_get_open_loans_for_user_returns_loans_with_titles(
     assert result[0].loan_id == loan.id
     assert result[0].book_id == loan.book_id
     assert result[0].title == "War and Peace"
+    book_repo.get_by_id.assert_not_awaited()

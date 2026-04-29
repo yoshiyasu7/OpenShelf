@@ -101,13 +101,18 @@ class BookUseCases:
         if await self._book_repository.has_overdue_loans(user_id=user_id, as_of=current_date):
             raise LoanOverdueError()
 
-        user = await self._user_repository.get_by_id(user_id=user_id)
-        if not user:
-            raise UserNotFoundError(f"User with id {user_id} not found")
-        if user.books_on_hand >= MAX_BOOKS_ON_HAND:
-            raise LoanLimitExceededError()
         if await self._book_repository.has_open_loan_for_book(user_id=user_id, book_id=book_id):
             raise AlreadyBorrowingBookError()
+
+        updated_user = await self._user_repository.increment_books_on_hand(
+            user_id=user_id,
+            max_books_on_hand=MAX_BOOKS_ON_HAND,
+        )
+        if not updated_user:
+            user = await self._user_repository.get_by_id(user_id=user_id)
+            if not user:
+                raise UserNotFoundError(f"User with id {user_id} not found")
+            raise LoanLimitExceededError()
 
         reserved_book = await self._book_repository.take_available_instance(book_id=book_id)
         if not reserved_book:
@@ -117,13 +122,6 @@ class BookUseCases:
             if found_book.available_instances <= 0:
                 raise NoAvailableInstancesError()
             raise ConcurrencyConflictError()
-
-        updated_user = await self._user_repository.update(
-            user_id=user_id,
-            data={"books_on_hand": user.books_on_hand + 1},
-        )
-        if not updated_user:
-            raise UserNotFoundError(f"User with id {user_id} not found")
 
         due_date = current_date + timedelta(days=DEFAULT_LOAN_DAYS)
         loan = await self._book_repository.create_loan(user_id=user_id, book_id=book_id, due_date=due_date)
@@ -144,25 +142,19 @@ class BookUseCases:
         if not returned_book:
             raise BookNotFoundError(f"Book with id {loan.book_id} not found")
 
-        borrower = await self._user_repository.get_by_id(user_id=loan.user_id)
-        if borrower and borrower.books_on_hand > 0:
-            await self._user_repository.update(
-                user_id=loan.user_id,
-                data={"books_on_hand": borrower.books_on_hand - 1},
-            )
+        await self._user_repository.decrement_books_on_hand(user_id=loan.user_id)
 
         return closed_loan, returned_book.available_instances
 
     async def get_open_loans_for_user(self, *, user_id: UUID) -> list[OpenLoanItem]:
-        loans = await self._book_repository.list_open_loans_by_user(user_id=user_id)
+        loans_with_titles = await self._book_repository.list_open_loans_with_book_titles(user_id=user_id)
         items: list[OpenLoanItem] = []
-        for loan in loans:
-            book = await self._book_repository.get_by_id(book_id=loan.book_id)
+        for loan, title in loans_with_titles:
             items.append(
                 OpenLoanItem(
                     loan_id=loan.id,
                     book_id=loan.book_id,
-                    title=book.title if book else None,
+                    title=title,
                     issued_at=loan.issued_at,
                     due_date=loan.due_date,
                 )

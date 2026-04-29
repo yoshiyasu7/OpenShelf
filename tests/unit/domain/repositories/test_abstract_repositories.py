@@ -28,10 +28,9 @@ def test_book_repository_declares_required_contract() -> None:
         "exists_by_title",
         "get_by_id",
         "get_loan_by_id",
-        "get_open_loan_by_id",
         "has_open_loan_for_book",
         "has_overdue_loans",
-        "list_open_loans_by_user",
+        "list_open_loans_with_book_titles",
         "list_paginated",
         "mark_loan_returned",
         "return_instance",
@@ -45,9 +44,11 @@ def test_user_repository_declares_required_contract() -> None:
     assert UserRepository.__abstractmethods__ == {
         "create",
         "delete",
+        "decrement_books_on_hand",
         "exists_by_username_or_email",
         "get_by_id",
         "get_by_identifier",
+        "increment_books_on_hand",
         "update",
     }
 

@@ -116,6 +116,12 @@ class AuthorModel(Base):
         CheckConstraint("char_length(btrim(name)) > 0", name="check_authors_name_not_blank"),
         CheckConstraint("char_length(biography) <= 10000", name="check_authors_biography_max_length"),
         Index("ux_authors_name_lower", func.lower(name), unique=True),
+        Index(
+            "idx_authors_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
     )
 
 
@@ -148,6 +154,13 @@ class BookModel(Base):
     __table_args__ = (
         CheckConstraint("publication_date <= CURRENT_DATE", name="check_publication_date_not_future"),
         CheckConstraint("available_instances >= 0", name="check_available_instances_not_negative"),
+        Index("ux_books_title_lower", func.lower(title), unique=True),
+        Index(
+            "idx_books_title_trgm",
+            "title",
+            postgresql_using="gin",
+            postgresql_ops={"title": "gin_trgm_ops"},
+        ),
     )
 
 
@@ -206,4 +219,17 @@ class BookLoanModel(Base):
         # Opened loans for a user or book.
         Index("idx_book_loans_user_open", "user_id", postgresql_where=(Column("returned_at").is_(None))),
         Index("idx_book_loans_book_open", "book_id", postgresql_where=(Column("returned_at").is_(None))),
+        Index(
+            "idx_book_loans_user_open_due_date",
+            "user_id",
+            "due_date",
+            postgresql_where=(Column("returned_at").is_(None)),
+        ),
+        Index(
+            "ux_book_loans_user_book_open",
+            "user_id",
+            "book_id",
+            unique=True,
+            postgresql_where=(Column("returned_at").is_(None)),
+        ),
     )

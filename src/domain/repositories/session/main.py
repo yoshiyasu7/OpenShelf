@@ -14,10 +14,6 @@ class SessionRepository(ABC):
         pass
 
     @abstractmethod
-    async def is_active(self, *, token_hash: str, now: datetime) -> bool:
-        pass
-
-    @abstractmethod
     async def revoke(self, *, token_hash: str, now: datetime) -> None:
         pass
 

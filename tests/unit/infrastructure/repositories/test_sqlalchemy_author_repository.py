@@ -110,7 +110,7 @@ async def test_delete_returns_false_when_nothing_deleted(
 async def test_get_by_id_returns_entity(repository: SQLAlchemyAuthorRepository, session: AsyncMock) -> None:
     author = make_author_model()
     result = Mock()
-    result.scalar_one_or_none.return_value = author
+    result.unique.return_value.scalar_one_or_none.return_value = author
     session.execute.return_value = result
 
     found = await repository.get_by_id(author_id=author.id)
@@ -137,9 +137,11 @@ async def test_create_persists_and_returns_author(repository: SQLAlchemyAuthorRe
 @pytest.mark.asyncio
 async def test_update_returns_entity(repository: SQLAlchemyAuthorRepository, session: AsyncMock) -> None:
     updated_author = make_author_model(name="Updated")
-    result = Mock()
-    result.scalar_one_or_none.return_value = updated_author
-    session.execute.return_value = result
+    update_result = Mock()
+    update_result.scalar_one_or_none.return_value = updated_author
+    get_result = Mock()
+    get_result.unique.return_value.scalar_one_or_none.return_value = updated_author
+    session.execute.side_effect = [update_result, get_result]
 
     updated = await repository.update(author_id=uuid4(), data={"name": "Updated"})
 

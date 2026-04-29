@@ -7,7 +7,6 @@ import pytest
 from src.infrastructure.repositories.sqlalchemy_book_repository import SQLAlchemyBookRepository
 from tests.helpers import make_book_loan_model, make_book_model
 
-
 @pytest.fixture
 def session() -> AsyncMock:
     session_mock = AsyncMock()
@@ -79,7 +78,7 @@ async def test_has_overdue_loans_returns_false_when_not_found(
     result.scalar_one_or_none.return_value = None
     session.execute.return_value = result
 
-    has_overdue = await repository.has_overdue_loans(user_id=uuid4(), as_of=date.today())
+    has_overdue = await repository.has_overdue_loans(user_id=uuid4(), as_of=datetime.now(tz=UTC).date())
 
     assert has_overdue is False
 
@@ -103,7 +102,7 @@ async def test_has_open_loan_for_book_returns_false_when_not_found(
 async def test_get_by_id_returns_book(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
     book = make_book_model()
     result = Mock()
-    result.scalar_one_or_none.return_value = book
+    result.unique.return_value.scalar_one_or_none.return_value = book
     session.execute.return_value = result
 
     found = await repository.get_by_id(book_id=book.id)
@@ -144,9 +143,11 @@ async def test_list_paginated_returns_empty_payload(repository: SQLAlchemyBookRe
 @pytest.mark.asyncio
 async def test_update_returns_book(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
     updated_book = make_book_model(title="Updated")
-    result = Mock()
-    result.scalar_one_or_none.return_value = updated_book
-    session.execute.return_value = result
+    update_result = Mock()
+    update_result.scalar_one_or_none.return_value = updated_book
+    get_result = Mock()
+    get_result.unique.return_value.scalar_one_or_none.return_value = updated_book
+    session.execute.side_effect = [update_result, get_result]
 
     updated = await repository.update(book_id=uuid4(), data={"title": "Updated"})
 
@@ -179,19 +180,22 @@ async def test_return_instance_returns_updated_book(repository: SQLAlchemyBookRe
 
 
 @pytest.mark.asyncio
-async def test_create_loan_persists_and_returns_entity(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
+async def test_create_loan_persists_and_returns_entity(
+    repository: SQLAlchemyBookRepository, session: AsyncMock
+) -> None:
     user_id = uuid4()
     book_id = uuid4()
     due_date = date(2026, 5, 1)
     now = datetime.now(tz=UTC)
 
-    async def refresh_side_effect(loan_model) -> None:
+    async def flush_side_effect() -> None:
+        loan_model = session.add.call_args.args[0]
         loan_model.id = uuid4()
         loan_model.issued_at = now
         loan_model.created_at = now
         loan_model.updated_at = now
 
-    session.refresh.side_effect = refresh_side_effect
+    session.flush.side_effect = flush_side_effect
 
     loan = await repository.create_loan(user_id=user_id, book_id=book_id, due_date=due_date)
 
@@ -201,7 +205,6 @@ async def test_create_loan_persists_and_returns_entity(repository: SQLAlchemyBoo
     assert loan.issued_at is not None
     session.add.assert_called_once()
     session.flush.assert_awaited_once()
-    session.refresh.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -212,19 +215,6 @@ async def test_get_loan_by_id_returns_loan(repository: SQLAlchemyBookRepository,
     session.execute.return_value = result
 
     found = await repository.get_loan_by_id(loan_id=loan.id)
-
-    assert found is not None
-    assert found.id == loan.id
-
-
-@pytest.mark.asyncio
-async def test_get_open_loan_by_id_returns_loan(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
-    loan = make_book_loan_model()
-    result = Mock()
-    result.scalar_one_or_none.return_value = loan
-    session.execute.return_value = result
-
-    found = await repository.get_open_loan_by_id(loan_id=loan.id)
 
     assert found is not None
     assert found.id == loan.id
@@ -246,17 +236,17 @@ async def test_mark_loan_returned_returns_updated_loan(
 
 
 @pytest.mark.asyncio
-async def test_list_open_loans_by_user_returns_open_loans(repository: SQLAlchemyBookRepository, session: AsyncMock) -> None:
+async def test_list_open_loans_with_book_titles_returns_pairs(
+    repository: SQLAlchemyBookRepository, session: AsyncMock
+) -> None:
     user_id = uuid4()
-    first = make_book_loan_model(user_id=user_id)
-    second = make_book_loan_model(user_id=user_id)
+    loan = make_book_loan_model(user_id=user_id)
     result = Mock()
-    result.scalars.return_value.all.return_value = [first, second]
+    result.all.return_value = [(loan, "War and Peace")]
     session.execute.return_value = result
 
-    loans = await repository.list_open_loans_by_user(user_id=user_id)
+    rows = await repository.list_open_loans_with_book_titles(user_id=user_id)
 
-    assert len(loans) == 2
-    assert loans[0].id == first.id
-    assert loans[1].id == second.id
-
+    assert len(rows) == 1
+    assert rows[0][0].id == loan.id
+    assert rows[0][1] == "War and Peace"
