@@ -209,6 +209,20 @@ textarea:focus {
   background: rgba(107, 62, 38, 0.08);
 }
 
+.btn-danger {
+  background: var(--err);
+}
+
+.btn-danger:hover {
+  background: #7f1717;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .toolbar {
   display: flex;
   flex-direction: column;

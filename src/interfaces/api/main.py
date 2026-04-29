@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.domain.exceptions.base import DomainError
 from src.infrastructure.database.provider import init_db_manager
 from src.infrastructure.logging.config import configure_logging
 from src.infrastructure.logging.middleware import (
@@ -61,6 +62,7 @@ def create_api_app() -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
 
     # Handle unexpected and custom errors
+    app.add_exception_handler(DomainError, exception_handler)
     app.add_exception_handler(Exception, exception_handler)
 
     # Global middleware (CORS, logging, etc.).

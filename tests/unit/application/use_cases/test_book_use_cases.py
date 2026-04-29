@@ -110,8 +110,8 @@ async def test_create_book_creates_entity_with_author_relation(
 
     assert result == created_book
     create_call_data = book_repo.create.call_args.kwargs["data"]
-    assert "authors" in create_call_data
-    assert len(create_call_data["authors"]) == 1
+    assert "author_ids" in create_call_data
+    assert create_call_data["author_ids"] == [author_id]
 
 
 @pytest.mark.asyncio
@@ -245,10 +245,10 @@ async def test_get_books_list_returns_paginated_payload(use_cases: BookUseCases,
 
     result = await use_cases.get_books_list(filters=filters)
 
-    assert result["items"] == books
-    assert result["total"] == 11
-    assert result["limit"] == 2
-    assert result["offset"] == 1
+    assert result.items == books
+    assert result.total == 11
+    assert result.limit == 2
+    assert result.offset == 1
 
 
 @pytest.mark.asyncio
@@ -441,7 +441,7 @@ async def test_return_book_decrements_user_counter_when_possible(
 
 
 @pytest.mark.asyncio
-async def test_get_open_loans_for_user_returns_payload(
+async def test_get_open_loans_for_user_returns_loans_with_titles(
     use_cases: BookUseCases,
     book_repo: AsyncMock,
 ) -> None:
@@ -454,6 +454,6 @@ async def test_get_open_loans_for_user_returns_payload(
     result = await use_cases.get_open_loans_for_user(user_id=user_id)
 
     assert len(result) == 1
-    assert result[0]["loan_id"] == loan.id
-    assert result[0]["book_id"] == loan.book_id
-    assert result[0]["title"] == "War and Peace"
+    assert result[0].loan_id == loan.id
+    assert result[0].book_id == loan.book_id
+    assert result[0].title == "War and Peace"

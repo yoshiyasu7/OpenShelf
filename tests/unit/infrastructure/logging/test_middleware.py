@@ -4,7 +4,7 @@ import pytest
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 
-from src.domain.exceptions.base import DomainError
+from src.domain.exceptions.user import InvalidCredentialsError
 from src.infrastructure.logging import middleware
 
 
@@ -74,11 +74,11 @@ async def test_exception_handler_domain_error(monkeypatch: pytest.MonkeyPatch) -
     warning_log = Mock()
     monkeypatch.setattr(middleware.error_log, "warning", warning_log)
     request = Request(scope={"type": "http", "method": "GET", "path": "/", "headers": []})
-    exc = DomainError(message="boom", error_code="ERR", status_code=418)
+    exc = InvalidCredentialsError()
 
     response = await middleware.exception_handler(request, exc)
 
-    assert response.status_code == 418
+    assert response.status_code == 401
     warning_log.assert_called_once()
 
 

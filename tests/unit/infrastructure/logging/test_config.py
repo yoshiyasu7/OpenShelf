@@ -6,7 +6,9 @@ import pytest
 from src.infrastructure.logging import config
 
 
-def _set_settings(monkeypatch: pytest.MonkeyPatch, *, env: str, level: str, log_to_file: bool | None, db_debug: bool) -> None:
+def _set_settings(
+    monkeypatch: pytest.MonkeyPatch, *, env: str, level: str, log_to_file: bool | None, db_debug: bool
+) -> None:
     monkeypatch.setattr(
         config,
         "settings",
@@ -33,7 +35,12 @@ def test_env_and_level_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_error_location_and_scrub_processors() -> None:
     event = {"event": "request_completed", "filename": "a.py", "lineno": 1, "func_name": "f", "exc_info": None}
-    assert config.drop_none_values(None, "info", event) == {"event": "request_completed", "filename": "a.py", "lineno": 1, "func_name": "f"}
+    assert config.drop_none_values(None, "info", event) == {
+        "event": "request_completed",
+        "filename": "a.py",
+        "lineno": 1,
+        "func_name": "f",
+    }
 
     stripped = config.strip_callsite_for_events(None, "info", dict(event))
     assert "filename" not in stripped
@@ -46,7 +53,9 @@ def test_error_location_and_scrub_processors() -> None:
     try:
         raise RuntimeError("boom")
     except RuntimeError:
-        enriched = config.add_error_location(None, "error", {"exc_info": True, "filename": "x.py", "lineno": 2, "func_name": "g"})
+        enriched = config.add_error_location(
+            None, "error", {"exc_info": True, "filename": "x.py", "lineno": 2, "func_name": "g"}
+        )
     assert enriched["error_type"] == "RuntimeError"
     assert "exc_info" not in enriched
     assert "filename" not in enriched
@@ -68,12 +77,16 @@ def test_sqlalchemy_params_filter_and_handlers(monkeypatch: pytest.MonkeyPatch, 
 
 def test_configure_logging_for_dev_and_prod(monkeypatch: pytest.MonkeyPatch) -> None:
     _set_settings(monkeypatch, env="dev", level="INFO", log_to_file=True, db_debug=False)
-    monkeypatch.setattr(config, "_build_stdlib_handlers", lambda *, with_files: {
-        "console": logging.StreamHandler(),
-        "api_file": logging.StreamHandler(),
-        "worker_file": logging.StreamHandler(),
-        "sql_file": logging.StreamHandler(),
-    })
+    monkeypatch.setattr(
+        config,
+        "_build_stdlib_handlers",
+        lambda *, with_files: {
+            "console": logging.StreamHandler(),
+            "api_file": logging.StreamHandler(),
+            "worker_file": logging.StreamHandler(),
+            "sql_file": logging.StreamHandler(),
+        },
+    )
     config.configure_logging()
 
     _set_settings(monkeypatch, env="prod", level="INFO", log_to_file=False, db_debug=True)

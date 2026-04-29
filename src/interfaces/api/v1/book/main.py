@@ -12,8 +12,8 @@ from src.application.dtos.book.main import (
     UpdateBookRequest,
     UserOpenLoanResponse,
 )
-from src.application.dtos.main import QueryFilterParamsDep  # noqa: TC001
 from src.dependencies import AdminUserDep, BookService, CurrentUserDep  # noqa: TC001
+from src.dependencies.query_filters import QueryFilterParamsDep  # noqa: TC001
 
 router = APIRouter(
     tags=["Books"],

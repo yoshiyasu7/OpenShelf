@@ -1,6 +1,6 @@
 [project]
 name = "OpenShelf"
-version = "1.1.0"
+version = "1.2.0"
 description = "RESTful API for managing a library catalog. The system allows you to manage information about books, authors, readers, and book loans."
 authors = [
     {name = "maxim.w",email = "max.wojw@gmail.com"}
@@ -14,13 +14,7 @@ dependencies = [
     "asyncpg (>=0.31.0,<0.32.0)",
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
-    "pytest (>=9.0.2,<10.0.0)",
-    "pytest-asyncio (>=1.3.0,<2.0.0)",
     "greenlet (>=3.3.2,<4.0.0)",
-    "python-socketio (>=5.16.1,<6.0.0)",
-    "pillow (>=12.1.1,<13.0.0)",
-    "fastapi-cache (>=0.1.0,<0.2.0)",
-    "cachetools (>=7.0.3,<8.0.0)",
     "structlog (>=25.5.0,<26.0.0)"
 ]
 
@@ -77,10 +71,6 @@ select = [
     "N",      # Naming
     "RUF",    # Ruff-specific rules
     "ASYNC",  # Asyncio best practices
-]
-ignore = [
-    "ANN101", # Self
-    "ANN102", # Cls
 ]
 
 [tool.ruff.lint.pep8-naming]

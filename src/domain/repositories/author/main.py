@@ -4,18 +4,18 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from uuid import UUID
 
-    from src.infrastructure.database.models import AuthorModel
+    from src.domain.entities import Author
 
 
 class AuthorRepository(ABC):
     """Abstract repository for author persistence."""
 
     @abstractmethod
-    async def get_by_id(self, *, author_id: UUID) -> AuthorModel | None:
+    async def get_by_id(self, *, author_id: UUID) -> Author | None:
         pass
 
     @abstractmethod
-    async def get_by_ids(self, *, author_ids: list[UUID]) -> list[AuthorModel]:
+    async def get_by_ids(self, *, author_ids: list[UUID]) -> list[Author]:
         pass
 
     @abstractmethod
@@ -23,7 +23,7 @@ class AuthorRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, *, data: dict[str, Any]) -> AuthorModel:
+    async def create(self, *, data: dict[str, Any]) -> Author:
         pass
 
     @abstractmethod
@@ -33,11 +33,11 @@ class AuthorRepository(ABC):
         limit: int,
         offset: int,
         name_query: str | None,
-    ) -> tuple[list[AuthorModel], int]:
+    ) -> tuple[list[Author], int]:
         pass
 
     @abstractmethod
-    async def update(self, *, author_id: UUID, data: dict[str, Any]) -> AuthorModel | None:
+    async def update(self, *, author_id: UUID, data: dict[str, Any]) -> Author | None:
         pass
 
     @abstractmethod

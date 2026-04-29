@@ -5,17 +5,17 @@ if TYPE_CHECKING:
     from datetime import datetime
     from uuid import UUID
 
-    from src.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
+    from src.domain.repositories.session.main import SessionRepository
 
 
 class RefreshSessionStore:
     """
-    Refresh session persistence helpers.
+    Refresh session persistence helpers (adapter for RefreshSessionStore port).
 
     Stores only SHA-256 hashes of refresh token strings.
     """
 
-    def __init__(self, repository: SQLAlchemySessionRepository) -> None:
+    def __init__(self, repository: SessionRepository) -> None:
         self._repository = repository
 
     @staticmethod
@@ -60,11 +60,9 @@ class RefreshSessionStore:
         """
         old_hash = self.hash_token(old_refresh_token)
 
-        # Ensure old token is active.
         if not await self.is_active(token_hash=old_hash, now=now):
             raise ValueError("Refresh token is not active.")
 
-        # Revoke old token.
         updated = await self._repository.revoke_for_user(
             user_id=user_id,
             token_hash=old_hash,
@@ -73,5 +71,4 @@ class RefreshSessionStore:
         if not updated:
             raise ValueError("Refresh token is not active.")
 
-        # Insert new session.
         await self.create(user_id=user_id, refresh_token=new_refresh_token, expires_at=new_expires_at)

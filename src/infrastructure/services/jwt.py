@@ -1,4 +1,4 @@
-"""JWT token service for authentication."""
+"""JWT token service for authentication (infrastructure adapter for TokenService port)."""
 
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -8,6 +8,8 @@ from uuid import UUID
 from jose import JWTError, jwt
 from pydantic import BaseModel, ValidationError
 
+from src.application.ports import TokenDecodeError, TokenValidationError
+
 if TYPE_CHECKING:
     from src.infrastructure.settings.main import JWTSettings
 
@@ -15,14 +17,6 @@ if TYPE_CHECKING:
 class TokenType(StrEnum):
     ACCESS = "access"
     REFRESH = "refresh"
-
-
-class TokenDecodeError(Exception):
-    """JWT decoding or cryptographic verification failed."""
-
-
-class TokenValidationError(Exception):
-    """JWT payload validation failed."""
 
 
 class TokenPayload(BaseModel):
@@ -116,8 +110,6 @@ class JWTService:
             raise TokenValidationError("Invalid JWT payload structure.") from exc
 
         if payload.type is not expected_type:
-            raise TokenValidationError(
-                f"Unexpected token type: {payload.type}, expected: {expected_type}."
-            )
+            raise TokenValidationError(f"Unexpected token type: {payload.type}, expected: {expected_type}.")
 
         return payload

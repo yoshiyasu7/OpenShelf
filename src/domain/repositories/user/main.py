@@ -4,18 +4,18 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from uuid import UUID
 
-    from src.infrastructure.database.models import UserModel
+    from src.domain.entities import User
 
 
 class UserRepository(ABC):
     """Abstract repository for user persistence."""
 
     @abstractmethod
-    async def get_by_id(self, *, user_id: UUID) -> UserModel | None:
+    async def get_by_id(self, *, user_id: UUID) -> User | None:
         pass
 
     @abstractmethod
-    async def get_by_identifier(self, *, identifier: str) -> UserModel | None:
+    async def get_by_identifier(self, *, identifier: str) -> User | None:
         pass
 
     @abstractmethod
@@ -24,16 +24,17 @@ class UserRepository(ABC):
 
     @abstractmethod
     async def create(
-        self, *,
+        self,
+        *,
         username: str,
         email: str | None,
         password_hash: str,
         is_admin: bool = False,
-    ) -> UserModel:
+    ) -> User:
         pass
 
     @abstractmethod
-    async def update(self, *, user_id: UUID, data: dict[str, Any]) -> UserModel | None:
+    async def update(self, *, user_id: UUID, data: dict[str, Any]) -> User | None:
         pass
 
     @abstractmethod

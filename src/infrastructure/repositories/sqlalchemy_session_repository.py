@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from sqlalchemy import select, update
 
+from src.domain.repositories.session.main import SessionRepository
 from src.infrastructure.database.models import RefreshSessionModel
 
 if TYPE_CHECKING:
@@ -11,19 +12,20 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class SQLAlchemySessionRepository:
+class SQLAlchemySessionRepository(SessionRepository):
     """SQLAlchemy repository for refresh session persistence."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @override
     async def create(
         self,
         *,
         user_id: UUID,
         token_hash: str,
         expires_at: datetime,
-    ) -> RefreshSessionModel:
+    ) -> None:
         model = RefreshSessionModel(
             user_id=user_id,
             token_hash=token_hash,
@@ -31,8 +33,8 @@ class SQLAlchemySessionRepository:
         )
         self._session.add(model)
         await self._session.flush()
-        return model
 
+    @override
     async def is_active(self, *, token_hash: str, now: datetime) -> bool:
         stmt = select(RefreshSessionModel.id).where(
             RefreshSessionModel.token_hash == token_hash,
@@ -42,6 +44,7 @@ class SQLAlchemySessionRepository:
         res = await self._session.execute(stmt)
         return res.scalar_one_or_none() is not None
 
+    @override
     async def revoke(self, *, token_hash: str, now: datetime) -> None:
         stmt = (
             update(RefreshSessionModel)
@@ -53,6 +56,7 @@ class SQLAlchemySessionRepository:
         )
         await self._session.execute(stmt)
 
+    @override
     async def revoke_for_user(self, *, user_id: UUID, token_hash: str, now: datetime) -> bool:
         stmt = (
             update(RefreshSessionModel)
@@ -62,6 +66,7 @@ class SQLAlchemySessionRepository:
                 RefreshSessionModel.revoked_at.is_(None),
             )
             .values(revoked_at=now)
+            .returning(RefreshSessionModel.id)
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None

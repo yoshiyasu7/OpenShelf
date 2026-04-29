@@ -161,7 +161,10 @@
             <label>Дата рождения
               <input name="birthday" type="date" required />
             </label>
-            <button type="submit" class="btn">Сохранить</button>
+            <div class="form-actions">
+              <button type="submit" class="btn">Сохранить</button>
+              <button type="button" class="btn btn-danger" id="btn-admin-author-delete">Удалить автора</button>
+            </div>
           </form>
         </section>
 
@@ -236,7 +239,10 @@
             <label>Доступно экземпляров
               <input name="available_instances" type="number" min="0" required />
             </label>
-            <button type="submit" class="btn">Сохранить</button>
+            <div class="form-actions">
+              <button type="submit" class="btn">Сохранить</button>
+              <button type="button" class="btn btn-danger" id="btn-admin-book-delete">Удалить книгу</button>
+            </div>
           </form>
         </section>
       </main>

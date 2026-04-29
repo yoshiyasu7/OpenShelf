@@ -887,6 +887,24 @@
     }
   });
 
+  el("btn-admin-author-delete")?.addEventListener("click", async () => {
+    const id = String(el("admin-author-edit-id")?.value || "").trim();
+    if (!isUuid(id)) {
+      msg("Некорректный ID автора.", false);
+      return;
+    }
+    if (!window.confirm("Удалить автора? Это действие нельзя отменить.")) {
+      return;
+    }
+    try {
+      await apiRequest(`/authors/${id}`, { method: "DELETE" });
+      msg("Автор удалён.", true);
+      location.hash = "admin/authors";
+    } catch (err) {
+      msg(String(err?.message || err), false);
+    }
+  });
+
   el("form-admin-book-create")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -937,6 +955,24 @@
     try {
       const b = await apiRequest(`/books/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
       msg(`Сохранено: «${b.title}»`, true);
+    } catch (err) {
+      msg(String(err?.message || err), false);
+    }
+  });
+
+  el("btn-admin-book-delete")?.addEventListener("click", async () => {
+    const id = String(el("admin-book-edit-id")?.value || "").trim();
+    if (!isUuid(id)) {
+      msg("Некорректный ID книги.", false);
+      return;
+    }
+    if (!window.confirm("Удалить книгу? Это действие нельзя отменить.")) {
+      return;
+    }
+    try {
+      await apiRequest(`/books/${id}`, { method: "DELETE" });
+      msg("Книга удалена.", true);
+      location.hash = "admin/books";
     } catch (err) {
       msg(String(err?.message || err), false);
     }

@@ -25,7 +25,7 @@ class PasswordHasher:
     def verify(self, password: str, password_hash: str) -> bool:
         try:
             return self._hasher.verify(password_hash, password)
-        except (VerifyMismatchError, InvalidHashError):
+        except VerifyMismatchError, InvalidHashError:
             return False
 
     def needs_rehash(self, password_hash: str) -> bool:

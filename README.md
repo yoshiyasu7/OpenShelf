@@ -40,7 +40,7 @@
 ### Ключевые особенности
 
 - ⚡ **Асинхронный стек**: FastAPI + SQLAlchemy Async + asyncpg.
-- 🧩 **Слоистая архитектура**: `domain` → `application` → `infrastructure` → `interfaces`.
+- 🧩 **Clean Architecture**: домен и use-cases не зависят от FastAPI, SQLAlchemy и других внешних деталей.
 - 🛡️ **Безопасность**: JWT access/refresh + хеширование паролей (Argon2).
 - ✅ **Ограничения на уровне БД**: `CHECK`, индексы, частичные индексы для активных займов и сессий.
 - 🧪 **Покрытие тестами**: unit-тесты для роутеров, use-cases, репозиториев, зависимостей и инфраструктуры.
@@ -93,16 +93,38 @@ make docker-test
 
 ## 🏗 Архитектура
 
-Проект следует слоистой архитектуре (похожа на Clean Architecture):
+Проект построен по принципам **Clean Architecture**: бизнес-правила находятся во внутренних слоях, а внешние детали (FastAPI, SQLAlchemy, PostgreSQL, JWT-библиотека, Argon2) подключаются через адаптеры.
 
-- `domain` — бизнес-сущности, контракты репозиториев, доменные ошибки.
-- `application` — DTO и use-cases (бизнес-сценарии).
-- `infrastructure` — SQLAlchemy-модели, репозитории, БД-менеджер, JWT/пароли, settings, logging.
-- `interfaces` — HTTP API (FastAPI routers), health-check и точка входа приложения.
+### Слои
+
+| Слой | Путь | Ответственность |
+|------|------|-----------------|
+| **Domain** | `src/domain/` | Доменные сущности, ошибки и абстрактные контракты репозиториев |
+| **Application** | `src/application/` | Use-cases, DTO и ports для внешних сервисов |
+| **Infrastructure** | `src/infrastructure/` | SQLAlchemy-модели, репозитории, JWT, Argon2, database manager, settings, logging |
+| **Interfaces** | `src/interfaces/` | FastAPI-приложение, роутеры, HTTP-схемы взаимодействия |
+| **Composition / DI** | `src/dependencies/` | Связывает use-cases с конкретными инфраструктурными адаптерами |
+
+### Правило зависимостей
+
+Внутренние слои не зависят от внешних:
+
+- `domain` не импортирует FastAPI, SQLAlchemy или инфраструктуру.
+- `application` работает с абстракциями: `BookRepository`, `UserRepository`, `TokenService`, `PasswordHasher`, `RefreshSessionStore`.
+- `infrastructure` реализует эти контракты через SQLAlchemy, JWT и Argon2.
+- `interfaces` принимает HTTP-запросы и передает работу use-cases через FastAPI dependencies.
 
 Поток запроса:
 
-`HTTP Request -> Router -> Dependencies/Auth -> Use Case -> Repository -> PostgreSQL -> Response`
+```text
+HTTP Request
+  -> FastAPI Router (interfaces)
+  -> Dependencies / DI
+  -> Use Case (application)
+  -> Port / Repository Contract
+  -> Infrastructure Adapter
+  -> PostgreSQL / JWT / Argon2
+```
 
 ---
 
@@ -118,9 +140,10 @@ OpenShelf/
 │   ├── docker-compose.yml         # Контейнеры app + postgres
 │   └── .env.example               # Переменные окружения для deployment
 ├── src/
-│   ├── application/               # DTO + Use Cases
-│   ├── domain/                    # Сущности, репозитории, исключения
-│   ├── infrastructure/            # DB, auth, repositories, settings, logging
+│   ├── application/               # Use Cases, DTO, ports
+│   ├── domain/                    # Сущности, контракты репозиториев, исключения
+│   ├── infrastructure/            # Адаптеры: DB, auth, repositories, settings, logging
+│   ├── dependencies/              # Dependency Injection / composition root
 │   └── interfaces/                # FastAPI приложение и роутеры
 └── tests/                         # Unit-тесты по слоям
 ```

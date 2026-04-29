@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from src.application.dtos.main import OpenLoanItem, PaginatedResult
 from src.domain.exceptions.author import AuthorNotFoundError
 from src.domain.exceptions.book import BookAlreadyExistsError, BookNotFoundError, InvalidPublicationDateError
 from src.domain.exceptions.loan import (
@@ -19,10 +20,10 @@ if TYPE_CHECKING:
 
     from src.application.dtos.book.main import CreateBookRequest, UpdateBookRequest
     from src.application.dtos.main import QueryFilterParams
+    from src.domain.entities import Book, BookLoan
     from src.domain.repositories.author.main import AuthorRepository
     from src.domain.repositories.book.main import BookRepository
     from src.domain.repositories.user.main import UserRepository
-    from src.infrastructure.database.models import BookLoanModel, BookModel
 
 MAX_BOOKS_ON_HAND = 5
 DEFAULT_LOAN_DAYS = 14
@@ -43,41 +44,36 @@ class BookUseCases:
         self._user_repository = user_repository
         self._author_repository = author_repository
 
-    async def create_book(self, *, payload: CreateBookRequest) -> BookModel:
+    async def create_book(self, *, payload: CreateBookRequest) -> Book:
         create_data = payload.model_dump()
         self._validate_publication_date(publication_date=create_data["publication_date"])
 
         if await self._book_repository.exists_by_title(title=create_data["title"]):
             raise BookAlreadyExistsError()
 
-        author_ids = create_data.pop("author_ids")
-        authors = await self._author_repository.get_by_ids(author_ids=author_ids)
-        if len(authors) != len(set(author_ids)):
+        author_ids: list[UUID] = create_data.pop("author_ids")
+        found_authors = await self._author_repository.get_by_ids(author_ids=author_ids)
+        if len(found_authors) != len(set(author_ids)):
             raise AuthorNotFoundError("One or more authors from author_ids were not found")
 
-        create_data["authors"] = authors
+        create_data["author_ids"] = author_ids
         return await self._book_repository.create(data=create_data)
 
-    async def get_book(self, *, book_id: UUID) -> BookModel:
+    async def get_book(self, *, book_id: UUID) -> Book:
         book = await self._book_repository.get_by_id(book_id=book_id)
         if not book:
             raise BookNotFoundError(f"Book with id {book_id} not found")
         return book
 
-    async def get_books_list(self, *, filters: QueryFilterParams) -> dict[str, Any]:
+    async def get_books_list(self, *, filters: QueryFilterParams) -> PaginatedResult[Book]:
         items, total = await self._book_repository.list_paginated(
             limit=filters.limit,
             offset=filters.offset,
             name_query=filters.name_query,
         )
-        return {
-            "items": items,
-            "total": total,
-            "limit": filters.limit,
-            "offset": filters.offset,
-        }
+        return PaginatedResult(items=items, total=total, limit=filters.limit, offset=filters.offset)
 
-    async def update_book(self, *, book_id: UUID, payload: UpdateBookRequest) -> BookModel:
+    async def update_book(self, *, book_id: UUID, payload: UpdateBookRequest) -> Book:
         update_data = payload.model_dump(exclude_unset=True)
         if not update_data:
             return await self.get_book(book_id=book_id)
@@ -100,7 +96,7 @@ class BookUseCases:
         if not deleted:
             raise BookNotFoundError(f"Book with id {book_id} not found")
 
-    async def issue_book(self, *, user_id: UUID, book_id: UUID) -> tuple[BookLoanModel, int]:
+    async def issue_book(self, *, user_id: UUID, book_id: UUID) -> tuple[BookLoan, int]:
         current_date = self._utc_today()
         if await self._book_repository.has_overdue_loans(user_id=user_id, as_of=current_date):
             raise LoanOverdueError()
@@ -133,7 +129,7 @@ class BookUseCases:
         loan = await self._book_repository.create_loan(user_id=user_id, book_id=book_id, due_date=due_date)
         return loan, reserved_book.available_instances
 
-    async def return_book(self, *, loan_id: UUID) -> tuple[BookLoanModel, int]:
+    async def return_book(self, *, loan_id: UUID) -> tuple[BookLoan, int]:
         loan = await self._book_repository.get_loan_by_id(loan_id=loan_id)
         if not loan:
             raise LoanNotFoundError(f"Loan with id {loan_id} not found")
@@ -157,19 +153,19 @@ class BookUseCases:
 
         return closed_loan, returned_book.available_instances
 
-    async def get_open_loans_for_user(self, *, user_id: UUID) -> list[dict[str, Any]]:
+    async def get_open_loans_for_user(self, *, user_id: UUID) -> list[OpenLoanItem]:
         loans = await self._book_repository.list_open_loans_by_user(user_id=user_id)
-        items: list[dict[str, Any]] = []
+        items: list[OpenLoanItem] = []
         for loan in loans:
             book = await self._book_repository.get_by_id(book_id=loan.book_id)
             items.append(
-                {
-                    "loan_id": loan.id,
-                    "book_id": loan.book_id,
-                    "title": book.title if book else "Книга",
-                    "issued_at": loan.issued_at,
-                    "due_date": loan.due_date,
-                }
+                OpenLoanItem(
+                    loan_id=loan.id,
+                    book_id=loan.book_id,
+                    title=book.title if book else None,
+                    issued_at=loan.issued_at,
+                    due_date=loan.due_date,
+                )
             )
         return items
 

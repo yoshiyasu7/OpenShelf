@@ -7,7 +7,9 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src.dependencies.services import get_auth_service
-from src.domain.exceptions.user import InvalidCredentialsError, UserNotFoundError
+from src.domain.exceptions.base import DomainError
+from src.domain.exceptions.user import InvalidCredentialsError
+from src.infrastructure.logging.middleware import exception_handler
 from src.interfaces.api.v1.auth.main import router as auth_router
 
 
@@ -19,6 +21,7 @@ def auth_use_cases() -> AsyncMock:
 @pytest.fixture
 def app(auth_use_cases: AsyncMock) -> FastAPI:
     app = FastAPI()
+    app.add_exception_handler(DomainError, exception_handler)
     app.include_router(auth_router, prefix="/api/v1")
 
     async def override_auth_service() -> AsyncMock:
@@ -64,17 +67,17 @@ def test_login_returns_401_for_invalid_credentials(app: FastAPI, auth_use_cases:
     response = client.post("/api/v1/auth/login", json={"identifier": "john", "password": "bad-pass"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json()["detail"] == "Invalid credentials"
+    assert response.json()["error"]["code"] == "INVALID_CREDENTIALS"
 
 
 def test_refresh_returns_401_for_invalid_refresh_token(app: FastAPI, auth_use_cases: AsyncMock) -> None:
     client = TestClient(app)
-    auth_use_cases.refresh.side_effect = UserNotFoundError()
+    auth_use_cases.refresh.side_effect = InvalidCredentialsError("Invalid refresh token.")
 
     response = client.post("/api/v1/auth/refresh", json={"refresh_token": "bad-token-value"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json()["detail"] == "Invalid refresh token"
+    assert response.json()["error"]["message"] == "Invalid refresh token."
 
 
 def test_refresh_returns_token_payload(app: FastAPI, auth_use_cases: AsyncMock) -> None:
@@ -98,12 +101,12 @@ def test_logout_returns_204(app: FastAPI, auth_use_cases: AsyncMock) -> None:
 
 def test_logout_returns_401_for_invalid_refresh_token(app: FastAPI, auth_use_cases: AsyncMock) -> None:
     client = TestClient(app)
-    auth_use_cases.logout.side_effect = InvalidCredentialsError()
+    auth_use_cases.logout.side_effect = InvalidCredentialsError("Invalid refresh token.")
 
     response = client.post("/api/v1/auth/logout", json={"refresh_token": "bad-refresh-token"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json()["detail"] == "Invalid refresh token"
+    assert response.json()["error"]["message"] == "Invalid refresh token."
 
 
 def test_login_returns_token_payload(app: FastAPI, auth_use_cases: AsyncMock) -> None:

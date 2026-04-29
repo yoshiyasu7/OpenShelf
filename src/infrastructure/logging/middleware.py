@@ -7,7 +7,15 @@ from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.domain.exceptions.base import DomainError
+from src.domain.exceptions.base import (
+    AuthenticationError,
+    BadRequestError,
+    ConflictError,
+    DomainError,
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationError,
+)
 
 from .config import get_logger
 
@@ -20,6 +28,21 @@ request_log = get_logger("openshelf.api.http")
 error_log = get_logger("openshelf.api.errors")
 
 REQUEST_ID_HEADER = b"x-request-id"
+DOMAIN_ERROR_STATUS_BY_CATEGORY: tuple[tuple[type[DomainError], int], ...] = (
+    (AuthenticationError, status.HTTP_401_UNAUTHORIZED),
+    (PermissionDeniedError, status.HTTP_403_FORBIDDEN),
+    (NotFoundError, status.HTTP_404_NOT_FOUND),
+    (ConflictError, status.HTTP_409_CONFLICT),
+    (ValidationError, status.HTTP_422_UNPROCESSABLE_CONTENT),
+    (BadRequestError, status.HTTP_400_BAD_REQUEST),
+)
+
+
+def _domain_error_status(exc: DomainError) -> int:
+    for category, status_code in DOMAIN_ERROR_STATUS_BY_CATEGORY:
+        if isinstance(exc, category):
+            return status_code
+    return status.HTTP_400_BAD_REQUEST
 
 
 def _resolve_endpoint_name(scope: Scope) -> str | None:
@@ -96,14 +119,15 @@ class RequestContextMiddleware:
 async def exception_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Single entry point that converts any exception into a JSON response."""
     if isinstance(exc, DomainError):
+        status_code = _domain_error_status(exc)
         error_log.warning(
             "domain_error",
             error_code=exc.error_code,
-            status_code=exc.status_code,
+            status_code=status_code,
             message=exc.message,
         )
         return JSONResponse(
-            status_code=exc.status_code,
+            status_code=status_code,
             content={
                 "error": {
                     "code": exc.error_code,

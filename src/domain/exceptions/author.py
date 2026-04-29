@@ -1,17 +1,17 @@
 """Author Domain-specific exceptions."""
 
-from src.domain.exceptions.base import DomainError, status
+from src.domain.exceptions.base import ConflictError, NotFoundError
 
 
-class AuthorNotFoundError(DomainError):
+class AuthorNotFoundError(NotFoundError):
     """Exception raised when author not found."""
-    status_code = status.HTTP_404_NOT_FOUND
+
     error_code = "AUTHOR_NOT_FOUND"
     message = "The requested author was not found"
 
 
-class AuthorAlreadyExistsError(DomainError):
+class AuthorAlreadyExistsError(ConflictError):
     """Exception raised when author already exists with name."""
-    status_code = status.HTTP_409_CONFLICT
+
     error_code = "AUTHOR_ALREADY_EXISTS"
     message = "An author with this name already exists"

@@ -73,10 +73,10 @@ async def test_get_authors_list_returns_paginated_payload(
 
     result = await use_cases.get_authors_list(filters=filters)
 
-    assert result["items"] == authors
-    assert result["total"] == 24
-    assert result["limit"] == 5
-    assert result["offset"] == 10
+    assert result.items == authors
+    assert result.total == 24
+    assert result.limit == 5
+    assert result.offset == 10
 
 
 @pytest.mark.asyncio
