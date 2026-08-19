@@ -3,7 +3,7 @@ name: openshelf
 services:
   app:
     container_name: openshelf-app
-    image: openshelf:latest
+    image: ${APP_IMAGE:-openshelf:latest}
     build:
       context: ..
       dockerfile: Dockerfile

@@ -1,4 +1,4 @@
-# === Системные файлы ОС (macOS / Windows / Linux) ===
+# === OS system files (macOS / Windows / Linux) ===
 .DS_Store
 Thumbs.db
 ehthumbs.db
@@ -9,7 +9,7 @@ $RECYCLE.BIN/
 *~
 
 
-# === Виртуальные окружения Python ===
+# === Python virtual environments ===
 .venv/
 venv/
 env/
@@ -17,20 +17,20 @@ env/
 .python-version
 
 
-# === Python артефакты ===
+# === Python artifacts ===
 __pycache__/
 *.py[cod]
 *$py.class
 
 
-# === Пакеты и сборки ===
+# === Packages and builds ===
 build/
 dist/
 *.egg-info/
 *.egg
 
 
-# === Тесты и покрытие ===
+# === Tests and coverage ===
 .pytest_cache/
 .coverage
 .coverage.*
@@ -40,7 +40,7 @@ coverage.xml
 .nox/
 
 
-# === Кэш и временные файлы инструментов ===
+# === Tool cache and temporary files ===
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
@@ -49,7 +49,7 @@ coverage.xml
 .cache/
 
 
-# === Конфиденциальные файлы и переменные окружения ===
+# === Secrets and environment variables ===
 .env
 .env.*
 !.env.example*
@@ -59,12 +59,12 @@ coverage.xml
 secrets.json
 
 
-# === Логи приложения ===
+# === Application logs ===
 logs/
 *.log
 
 
-# === Конфигурация IDE/редакторов ===
+# === IDE / editor configuration ===
 .idea/
 .vscode/
 .cursor/
@@ -77,7 +77,7 @@ docker-volume-*/
 *.pid
 
 
-# === Alembic / миграции БД (артефакты) ===
+# === Alembic / DB migrations (artifacts) ===
 alembic.ini.bak
 versions/__pycache__/
 

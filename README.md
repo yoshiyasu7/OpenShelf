@@ -1,6 +1,6 @@
 # 📚 OpenShelf API
 
-> REST API для управления библиотечным каталогом: книги, авторы, пользователи и выдача/возврат книг.
+> REST API for managing a library catalog: books, authors, users, and book checkout/return.
 
 ![Python](https://img.shields.io/badge/Python-3.14+-3776AB?style=flat&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.135+-009688?style=flat&logo=fastapi&logoColor=white)
@@ -9,112 +9,116 @@
 
 ---
 
-## 📋 Содержание
-
-- [О проекте](#-о-проекте)
-- [Быстрый старт](#-быстрый-старт)
-- [Архитектура](#-архитектура)
-- [Структура проекта](#-структура-проекта)
-- [API эндпоинты](#-api-эндпоинты)
-- [Таблицы базы данных](#-таблицы-базы-данных)
-- [Конфигурация](#-конфигурация)
-- [Качество и тестирование](#-качество-и-тестирование)
+🇺🇸 EN | [🇷🇺 RU](./README_ru.md)
 
 ---
 
-## 🎯 О проекте
+## 📋 Table of Contents
 
-**OpenShelf API** — это backend-сервис для библиотечной системы с разграничением доступа по ролям и поддержкой полного жизненного цикла книги: от создания карточки до возврата читателем.
-
-### Основные возможности
-
-| Функция | Описание |
-|---------|----------|
-| 🔐 **Аутентификация** | Регистрация, логин, refresh/logout на JWT |
-| 👤 **Пользователи** | Профиль пользователя (`/me`) и админ-операции по пользователям |
-| ✍️ **Авторы** | CRUD для авторов, фильтрация и валидация данных |
-| 📖 **Книги** | CRUD для книг, фильтрация, управление доступными экземплярами |
-| 🔄 **Выдача** | Оформление выдачи книги и возврат с обновлением остатков |
-| ❤️ **Health-check** | Проверка состояния приложения и базы данных |
-
-### Ключевые особенности
-
-- ⚡ **Асинхронный стек**: FastAPI + SQLAlchemy Async + asyncpg.
-- 🧩 **Clean Architecture**: домен и use-cases не зависят от FastAPI, SQLAlchemy и других внешних деталей.
-- 🛡️ **Безопасность**: JWT access/refresh + хеширование паролей (Argon2).
-- ✅ **Ограничения на уровне БД**: `CHECK`, индексы, частичные индексы для активных займов и сессий.
-- 🧪 **Покрытие тестами**: unit-тесты для роутеров, use-cases, репозиториев, зависимостей и инфраструктуры.
+- [About](#-about)
+- [Quick Start](#-quick-start)
+- [Architecture](#-architecture)
+- [Project Structure](#-project-structure)
+- [API Endpoints](#-api-endpoints)
+- [Database Tables](#-database-tables)
+- [Configuration](#-configuration)
+- [Quality and Testing](#-quality-and-testing)
 
 ---
 
-## 🚀 Быстрый старт
+## 🎯 About
 
-### Требования
+**OpenShelf API** is a backend service for a library system with role-based access control and full book lifecycle support: from creating a catalog entry to returning it by a reader.
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Authentication** | Registration, login, refresh/logout with JWT |
+| 👤 **Users** | User profile (`/me`) and admin user operations |
+| ✍️ **Authors** | CRUD for authors, filtering, and data validation |
+| 📖 **Books** | CRUD for books, filtering, available copy management |
+| 🔄 **Loans** | Book checkout and return with inventory updates |
+| ❤️ **Health-check** | Application and database health checks |
+
+### Key Highlights
+
+- ⚡ **Async stack**: FastAPI + SQLAlchemy Async + asyncpg.
+- 🧩 **Clean Architecture**: domain and use cases are independent of FastAPI, SQLAlchemy, and other external details.
+- 🛡️ **Security**: JWT access/refresh + password hashing (Argon2).
+- ✅ **Database constraints**: `CHECK`, indexes, partial indexes for active loans and sessions.
+- 🧪 **Test coverage**: unit tests for routers, use cases, repositories, dependencies, and infrastructure.
+
+---
+
+## 🚀 Quick Start
+
+### Requirements
 
 - Python 3.14+
 - Poetry
-- PostgreSQL 17+ (для локального запуска без Docker)
-- Docker + Docker Compose (для контейнерного запуска)
+- PostgreSQL 17+ (for local runs without Docker)
+- Docker + Docker Compose (for containerized runs)
 
-### Локальный запуск
+### Local Run
 
 ```bash
-# 1. Установка зависимостей
+# 1. Install dependencies
 poetry install
 
-# 2. Создание env
+# 2. Create env
 cp .env.example .env
-# Заполните обязательные переменные (JWT_SECRET_KEY, JWT_ALGORITHM, DB_URL и др.)
+# Fill in required variables (JWT_SECRET_KEY, JWT_ALGORITHM, DB_URL, etc.)
 
-# 3. Миграции
+# 3. Migrations
 alembic upgrade head
 
-# 4. Запуск приложения
+# 4. Start the application
 make run
 ```
 
 **API:** `http://127.0.0.1:8000`  
 **Swagger UI:** `http://127.0.0.1:8000/docs`
 
-### Запуск в Docker Compose
+### Docker Compose Run
 
 ```bash
-# 1. Подготовка env для deployment
+# 1. Prepare env for deployment
 cp deployment/.env.example deployment/.env
-# Заполните обязательные переменные (JWT_SECRET_KEY, JWT_ALGORITHM, DB_URL и др.)
+# Fill in required variables (JWT_SECRET_KEY, JWT_ALGORITHM, DB_URL, etc.)
 
-# 2. Запуск сервисов
+# 2. Start services
 docker compose -f deployment/docker-compose.yml up --build -d
-# или
+# or
 make docker-test
 ```
 
 ---
 
-## 🏗 Архитектура
+## 🏗 Architecture
 
-Проект построен по принципам **Clean Architecture**: бизнес-правила находятся во внутренних слоях, а внешние детали (FastAPI, SQLAlchemy, PostgreSQL, JWT-библиотека, Argon2) подключаются через адаптеры.
+The project follows **Clean Architecture** principles: business rules live in inner layers, while external details (FastAPI, SQLAlchemy, PostgreSQL, JWT library, Argon2) are wired through adapters.
 
-### Слои
+### Layers
 
-| Слой | Путь | Ответственность |
-|------|------|-----------------|
-| **Domain** | `src/domain/` | Доменные сущности, ошибки и абстрактные контракты репозиториев |
-| **Application** | `src/application/` | Use-cases, DTO и ports для внешних сервисов |
-| **Infrastructure** | `src/infrastructure/` | SQLAlchemy-модели, репозитории, JWT, Argon2, database manager, settings, logging |
-| **Interfaces** | `src/interfaces/` | FastAPI-приложение, роутеры, HTTP-схемы взаимодействия |
-| **Composition / DI** | `src/dependencies/` | Связывает use-cases с конкретными инфраструктурными адаптерами |
+| Layer | Path | Responsibility |
+|------|------|----------------|
+| **Domain** | `src/domain/` | Domain entities, errors, and abstract repository contracts |
+| **Application** | `src/application/` | Use cases, DTOs, and ports for external services |
+| **Infrastructure** | `src/infrastructure/` | SQLAlchemy models, repositories, JWT, Argon2, database manager, settings, logging |
+| **Interfaces** | `src/interfaces/` | FastAPI application, routers, HTTP interaction schemas |
+| **Composition / DI** | `src/dependencies/` | Wires use cases to concrete infrastructure adapters |
 
-### Правило зависимостей
+### Dependency Rule
 
-Внутренние слои не зависят от внешних:
+Inner layers do not depend on outer layers:
 
-- `domain` не импортирует FastAPI, SQLAlchemy или инфраструктуру.
-- `application` работает с абстракциями: `BookRepository`, `UserRepository`, `TokenService`, `PasswordHasher`, `RefreshSessionStore`.
-- `infrastructure` реализует эти контракты через SQLAlchemy, JWT и Argon2.
-- `interfaces` принимает HTTP-запросы и передает работу use-cases через FastAPI dependencies.
+- `domain` does not import FastAPI, SQLAlchemy, or infrastructure.
+- `application` works with abstractions: `BookRepository`, `UserRepository`, `TokenService`, `PasswordHasher`, `RefreshSessionStore`.
+- `infrastructure` implements these contracts via SQLAlchemy, JWT, and Argon2.
+- `interfaces` accepts HTTP requests and delegates work to use cases through FastAPI dependencies.
 
-Поток запроса:
+Request flow:
 
 ```text
 HTTP Request
@@ -128,134 +132,134 @@ HTTP Request
 
 ---
 
-## 📁 Структура проекта
+## 📁 Project Structure
 
 ```text
 OpenShelf/
-├── pyproject.toml                 # Зависимости и tooling (Poetry, Ruff, Basedpyright)
-├── Makefile                       # Команды запуска, тестов и проверок
-├── Dockerfile                     # Multi-stage образ приложения
-├── alembic/                       # Миграции БД
+├── pyproject.toml                 # Dependencies and tooling (Poetry, Ruff, Basedpyright)
+├── Makefile                       # Run, test, and check commands
+├── Dockerfile                     # Multi-stage application image
+├── alembic/                       # DB migrations
 ├── deployment/
-│   ├── docker-compose.yml         # Контейнеры app + postgres
-│   └── .env.example               # Переменные окружения для deployment
+│   ├── docker-compose.yml         # app + postgres containers
+│   └── .env.example               # Environment variables for deployment
 ├── src/
 │   ├── application/               # Use Cases, DTO, ports
-│   ├── domain/                    # Сущности, контракты репозиториев, исключения
-│   ├── infrastructure/            # Адаптеры: DB, auth, repositories, settings, logging
+│   ├── domain/                    # Entities, repository contracts, exceptions
+│   ├── infrastructure/            # Adapters: DB, auth, repositories, settings, logging
 │   ├── dependencies/              # Dependency Injection / composition root
-│   └── interfaces/                # FastAPI приложение и роутеры
-└── tests/                         # Unit-тесты по слоям
+│   └── interfaces/                # FastAPI application and routers
+└── tests/                         # Unit tests by layer
 ```
 
 ---
 
-## 🔌 API эндпоинты
+## 🔌 API Endpoints
 
-Базовый префикс API: `/api/v1`
+Base API prefix: `/api/v1`
 
 ### Health
 
-| Метод | Эндпоинт | Описание |
-|------|----------|----------|
-| GET | `/health` | Общее состояние приложения и БД |
-| GET | `/health/db` | Состояние только БД |
+| Method | Endpoint | Description |
+|------|----------|-------------|
+| GET | `/health` | Overall application and DB status |
+| GET | `/health/db` | DB status only |
 
 ### Authentication
 
-| Метод | Эндпоинт | Описание | Доступ |
-|------|----------|----------|--------|
-| POST | `/api/v1/auth/register` | Регистрация пользователя | Public |
-| POST | `/api/v1/auth/login` | Логин и выдача access/refresh | Public |
-| POST | `/api/v1/auth/refresh` | Обновление токенов | Public |
-| POST | `/api/v1/auth/logout` | Выход (инвалидация refresh) | Public |
+| Method | Endpoint | Description | Access |
+|------|----------|-------------|--------|
+| POST | `/api/v1/auth/register` | Register a user | Public |
+| POST | `/api/v1/auth/login` | Login and issue access/refresh tokens | Public |
+| POST | `/api/v1/auth/refresh` | Refresh tokens | Public |
+| POST | `/api/v1/auth/logout` | Logout (invalidate refresh token) | Public |
 
 ### Users
 
-| Метод | Эндпоинт | Описание | Доступ |
-|------|----------|----------|--------|
-| GET | `/api/v1/users/me` | Текущий пользователь | Auth |
-| PATCH | `/api/v1/users/me` | Обновление своего профиля | Auth |
-| DELETE | `/api/v1/users/me` | Удаление своего аккаунта | Auth |
-| GET | `/api/v1/users/{user_id}` | Получение пользователя по id | Admin |
-| PATCH | `/api/v1/users/{user_id}` | Обновление пользователя | Admin |
-| DELETE | `/api/v1/users/{user_id}` | Удаление пользователя | Admin |
+| Method | Endpoint | Description | Access |
+|------|----------|-------------|--------|
+| GET | `/api/v1/users/me` | Current user | Auth |
+| PATCH | `/api/v1/users/me` | Update own profile | Auth |
+| DELETE | `/api/v1/users/me` | Delete own account | Auth |
+| GET | `/api/v1/users/{user_id}` | Get user by id | Admin |
+| PATCH | `/api/v1/users/{user_id}` | Update user | Admin |
+| DELETE | `/api/v1/users/{user_id}` | Delete user | Admin |
 
 ### Authors
 
-| Метод | Эндпоинт | Описание | Доступ |
-|------|----------|----------|--------|
-| POST | `/api/v1/authors/` | Создание автора | Admin |
-| GET | `/api/v1/authors/` | Список авторов (с фильтрацией) | Auth |
-| GET | `/api/v1/authors/{author_id}` | Получение автора | Auth |
-| PATCH | `/api/v1/authors/{author_id}` | Обновление автора | Admin |
-| DELETE | `/api/v1/authors/{author_id}` | Удаление автора | Admin |
+| Method | Endpoint | Description | Access |
+|------|----------|-------------|--------|
+| POST | `/api/v1/authors/` | Create author | Admin |
+| GET | `/api/v1/authors/` | List authors (with filtering) | Auth |
+| GET | `/api/v1/authors/{author_id}` | Get author | Auth |
+| PATCH | `/api/v1/authors/{author_id}` | Update author | Admin |
+| DELETE | `/api/v1/authors/{author_id}` | Delete author | Admin |
 
 ### Books
 
-| Метод | Эндпоинт | Описание | Доступ |
-|------|----------|----------|--------|
-| POST | `/api/v1/books/` | Создание книги | Admin |
-| GET | `/api/v1/books/` | Список книг (с фильтрацией) | Auth |
-| GET | `/api/v1/books/{book_id}` | Получение книги | Auth |
-| POST | `/api/v1/books/{book_id}/issue` | Выдача книги текущему пользователю | Auth |
-| POST | `/api/v1/books/loans/{loan_id}/return` | Возврат книги | Auth |
-| PATCH | `/api/v1/books/{book_id}` | Обновление книги | Admin |
-| DELETE | `/api/v1/books/{book_id}` | Удаление книги | Admin |
+| Method | Endpoint | Description | Access |
+|------|----------|-------------|--------|
+| POST | `/api/v1/books/` | Create book | Admin |
+| GET | `/api/v1/books/` | List books (with filtering) | Auth |
+| GET | `/api/v1/books/{book_id}` | Get book | Auth |
+| POST | `/api/v1/books/{book_id}/issue` | Issue book to current user | Auth |
+| POST | `/api/v1/books/loans/{loan_id}/return` | Return book | Auth |
+| PATCH | `/api/v1/books/{book_id}` | Update book | Admin |
+| DELETE | `/api/v1/books/{book_id}` | Delete book | Admin |
 
 ---
 
-## 🗃 Таблицы базы данных
+## 🗃 Database Tables
 
-Ниже перечислены таблицы, которые формируются миграциями Alembic и SQLAlchemy-моделями.
+The tables below are created by Alembic migrations and SQLAlchemy models.
 
-| Таблица | Назначение | Ключевые поля | Связи |
+| Table | Purpose | Key Fields | Relations |
 |---------|------------|---------------|-------|
-| `users` | Учетные записи пользователей | `id`, `username`, `email`, `password_hash`, `is_admin`, `books_on_hand`, `created_at`, `updated_at` | `1:N` с `refresh_sessions`, `1:N` с `book_loans` |
-| `refresh_sessions` | Хранение refresh-сессий (по хэшу токена) | `id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`, `created_at` | `N:1` к `users` |
-| `authors` | Авторы книг | `id`, `name`, `biography`, `birthday`, `created_at`, `updated_at` | `M:N` с `books` через `authors_books` |
-| `books` | Книги каталога | `id`, `title`, `description`, `publication_date`, `genres`, `available_instances`, `created_at`, `updated_at` | `M:N` с `authors`, `1:N` с `book_loans` |
-| `authors_books` | Связка авторов и книг | `author_id`, `book_id` | `N:1` к `authors`, `N:1` к `books` |
-| `book_loans` | Факты выдачи/возврата книг | `id`, `user_id`, `book_id`, `issued_at`, `due_date`, `returned_at`, `created_at`, `updated_at` | `N:1` к `users`, `N:1` к `books` |
+| `users` | User accounts | `id`, `username`, `email`, `password_hash`, `is_admin`, `books_on_hand`, `created_at`, `updated_at` | `1:N` with `refresh_sessions`, `1:N` with `book_loans` |
+| `refresh_sessions` | Refresh session storage (by token hash) | `id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`, `created_at` | `N:1` to `users` |
+| `authors` | Book authors | `id`, `name`, `biography`, `birthday`, `created_at`, `updated_at` | `M:N` with `books` via `authors_books` |
+| `books` | Catalog books | `id`, `title`, `description`, `publication_date`, `genres`, `available_instances`, `created_at`, `updated_at` | `M:N` with `authors`, `1:N` with `book_loans` |
+| `authors_books` | Author–book link | `author_id`, `book_id` | `N:1` to `authors`, `N:1` to `books` |
+| `book_loans` | Book checkout/return records | `id`, `user_id`, `book_id`, `issued_at`, `due_date`, `returned_at`, `created_at`, `updated_at` | `N:1` to `users`, `N:1` to `books` |
 
-### Важные ограничения и индексы
+### Important Constraints and Indexes
 
-- `authors`: уникальность имени без учета регистра (`ux_authors_name_lower`), запрет пустого имени и лимит длины биографии.
-- `books`: запрет будущей даты публикации и отрицательного количества экземпляров.
-- `book_loans`: контроль корректных дат выдачи/возврата, частичные индексы для открытых займов.
-- `refresh_sessions`: уникальный `token_hash`, контроль `expires_at > created_at`, частичный индекс активных сессий.
+- `authors`: case-insensitive unique name (`ux_authors_name_lower`), non-empty name requirement, biography length limit.
+- `books`: no future publication dates, no negative copy counts.
+- `book_loans`: valid issue/return date checks, partial indexes for open loans.
+- `refresh_sessions`: unique `token_hash`, `expires_at > created_at` check, partial index for active sessions.
 
 ---
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
-Основные файлы окружения:
+Main environment files:
 
-- `.env.example` — локальный запуск.
-- `deployment/.env.example` — запуск в Docker Compose/серверном окружении.
+- `.env.example` — local run.
+- `deployment/.env.example` — Docker Compose / server deployment.
 
-Ключевые группы переменных:
+Key variable groups:
 
-| Группа | Примеры | Назначение |
+| Group | Examples | Purpose |
 |--------|---------|------------|
-| API | `API_HOST`, `API_PORT`, `API_DEBUG` | Параметры FastAPI/Uvicorn |
-| JWT | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Аутентификация и срок жизни токенов |
-| DB | `DB_URL`, `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` | Подключение и пулы PostgreSQL |
-| APP/LOG | `APP_ENV`, `LOG_LEVEL`, `LOG_TO_FILE` | Режим окружения и логирование |
+| API | `API_HOST`, `API_PORT`, `API_DEBUG` | FastAPI/Uvicorn settings |
+| JWT | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Authentication and token lifetimes |
+| DB | `DB_URL`, `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` | PostgreSQL connection and pools |
+| APP/LOG | `APP_ENV`, `LOG_LEVEL`, `LOG_TO_FILE` | Environment mode and logging |
 
 ---
 
-## 🧪 Качество и тестирование
+## 🧪 Quality and Testing
 
 ```bash
-# Unit-тесты
+# Unit tests
 make test
 
-# Линт + формат + type-check
+# Lint + format + type-check
 make check
 ```
 
-Используется:
+Tools used:
 
 - `pytest`, `pytest-asyncio`
 - `ruff`
